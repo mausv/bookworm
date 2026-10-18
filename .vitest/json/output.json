@@ -1,0 +1,623 @@
+{
+  "numTotalTestSuites": 12,
+  "numPassedTestSuites": 8,
+  "numFailedTestSuites": 4,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 51,
+  "numPassedTests": 49,
+  "numFailedTests": 2,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1792345220046,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases detects clippings files",
+          "status": "passed",
+          "title": "detects clippings files",
+          "duration": 1.0297499999999928,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases takes the author from the last parenthesized group and cleans the title",
+          "status": "passed",
+          "title": "takes the author from the last parenthesized group and cleans the title",
+          "duration": 0.4922499999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases reads page, location range and date",
+          "status": "passed",
+          "title": "reads page, location range and date",
+          "duration": 0.4179589999999962,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases keeps only the latest revision of an extended highlight",
+          "status": "passed",
+          "title": "keeps only the latest revision of an extended highlight",
+          "duration": 0.24729099999998994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases attaches the latest note to the highlight it covers",
+          "status": "passed",
+          "title": "attaches the latest note to the highlight it covers",
+          "duration": 0.07641599999999471,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases keeps a note without a highlight as its own entry",
+          "status": "passed",
+          "title": "keeps a note without a highlight as its own entry",
+          "duration": 0.14612499999999784,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases skips bookmarks and clipping-limit placeholders",
+          "status": "passed",
+          "title": "skips bookmarks and clipping-limit placeholders",
+          "duration": 0.1822080000000028,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt edge cases"],
+          "fullName": "My Clippings.txt edge cases expands abbreviated location ranges from old firmware",
+          "status": "passed",
+          "title": "expands abbreviated location ranges from old firmware",
+          "duration": 0.10099999999999909,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"Books must be read\"",
+          "status": "passed",
+          "title": "parses the location of \"Books must be read\"",
+          "duration": 0.5111250000000069,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"ls -F shows\"",
+          "status": "passed",
+          "title": "parses the location of \"ls -F shows\"",
+          "duration": 0.10208400000000495,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"You should specify copy\"",
+          "status": "passed",
+          "title": "parses the location of \"You should specify copy\"",
+          "duration": 0.12662499999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"You would have searched\"",
+          "status": "passed",
+          "title": "parses the location of \"You would have searched\"",
+          "duration": 0.04445799999999167,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"Whatever Mum\"",
+          "status": "passed",
+          "title": "parses the location of \"Whatever Mum\"",
+          "duration": 0.03545800000000554,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"I’m a novelist\"",
+          "status": "passed",
+          "title": "parses the location of \"I’m a novelist\"",
+          "duration": 0.08237499999999898,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"“Mainstream readers\"",
+          "status": "passed",
+          "title": "parses the location of \"“Mainstream readers\"",
+          "duration": 0.03520800000001145,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"cooled. I sat\"",
+          "status": "passed",
+          "title": "parses the location of \"cooled. I sat\"",
+          "duration": 0.03545800000000554,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"Douglas Stewart\"",
+          "status": "passed",
+          "title": "parses the location of \"Douglas Stewart\"",
+          "duration": 0.12862499999999955,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"think I might enjoy\"",
+          "status": "passed",
+          "title": "parses the location of \"think I might enjoy\"",
+          "duration": 0.03295900000000529,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"part of Paris\"",
+          "status": "passed",
+          "title": "parses the location of \"part of Paris\"",
+          "duration": 0.029167000000001053,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"Overrunning the satellite\"",
+          "status": "passed",
+          "title": "parses the location of \"Overrunning the satellite\"",
+          "duration": 0.028499999999993975,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"may tranquillity\"",
+          "status": "passed",
+          "title": "parses the location of \"may tranquillity\"",
+          "duration": 0.028083000000009406,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages parses the location of \"array. Arrays in Swift\"",
+          "status": "passed",
+          "title": "parses the location of \"array. Arrays in Swift\"",
+          "duration": 0.03079200000000526,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages treats localized notes as notes, not highlights",
+          "status": "failed",
+          "title": "treats localized notes as notes, not highlights",
+          "duration": 4.227249999999998,
+          "failureMessages": [
+            "AssertionError: expected { text: 'chinese', page: '5', …(4) } to be undefined\n    at /Users/mausv/Development/Galaxy/bookworm/src/importers/clippings.test.ts:88:33\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:1632:35\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:26\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3334:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3329:10)\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3314:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3272:10)\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3895:64"
+          ],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages pairs a localized note with its highlight",
+          "status": "passed",
+          "title": "pairs a localized note with its highlight",
+          "duration": 0.084541999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages never imports bookmarks",
+          "status": "passed",
+          "title": "never imports bookmarks",
+          "duration": 0.06937500000000796,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["My Clippings.txt across languages"],
+          "fullName": "My Clippings.txt across languages strips a byte order mark from the first title",
+          "status": "passed",
+          "title": "strips a byte order mark from the first title",
+          "duration": 0.5972079999999949,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Added on Monday, February 2, 2015 9:42:48 PM",
+          "status": "passed",
+          "title": "parses Added on Monday, February 2, 2015 9:42:48 PM",
+          "duration": 0.24887499999999818,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Added on Thursday, 3 December 2015 11:02:51",
+          "status": "passed",
+          "title": "parses Added on Thursday, 3 December 2015 11:02:51",
+          "duration": 0.042375000000006935,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Añadido el sábado, 26 de diciembre de 2015 11:05:59",
+          "status": "passed",
+          "title": "parses Añadido el sábado, 26 de diciembre de 2015 11:05:59",
+          "duration": 0.03754200000000196,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Añadido el viernes 6 de septiembre de 2013, 13:05:02",
+          "status": "passed",
+          "title": "parses Añadido el viernes 6 de septiembre de 2013, 13:05:02",
+          "duration": 0.035165999999989594,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Hinzugefügt am Samstag, 26. Dezember 2015 11:02:51",
+          "status": "passed",
+          "title": "parses Hinzugefügt am Samstag, 26. Dezember 2015 11:02:51",
+          "duration": 0.031582999999997696,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Ajouté le samedi 26 décembre 2015 11:21:18",
+          "status": "passed",
+          "title": "parses Ajouté le samedi 26 décembre 2015 11:21:18",
+          "duration": 0.03220799999999713,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses Добавлено: суббота, 26 декабря 2015 г. в 0:16:37",
+          "status": "passed",
+          "title": "parses Добавлено: суббота, 26 декабря 2015 г. в 0:16:37",
+          "duration": 0.03933400000001086,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses 作成日: 2015年12月26日土曜日 11:32:45",
+          "status": "passed",
+          "title": "parses 作成日: 2015年12月26日土曜日 11:32:45",
+          "duration": 0.030082999999990534,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["parseClippingDate"],
+          "fullName": "parseClippingDate parses 添加于 2016年5月4日星期三 下午5:57:27",
+          "status": "passed",
+          "title": "parses 添加于 2016年5月4日星期三 下午5:57:27",
+          "duration": 0.02791700000000219,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1792345220206,
+      "endTime": 1792345220216.0393,
+      "status": "failed",
+      "message": "",
+      "name": "/Users/mausv/Development/Galaxy/bookworm/src/importers/clippings.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html detects notebook exports",
+          "status": "passed",
+          "title": "detects notebook exports",
+          "duration": 1.0862499999999926,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html reads the title without author and Z-Library suffixes, and the author",
+          "status": "passed",
+          "title": "reads the title without author and Z-Library suffixes, and the author",
+          "duration": 0.18820800000000304,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html reads colors from the annotation class",
+          "status": "passed",
+          "title": "reads colors from the annotation class",
+          "duration": 0.12399999999999523,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html uses the chapter from the heading, falling back to the section",
+          "status": "passed",
+          "title": "uses the chapter from the heading, falling back to the section",
+          "duration": 0.30125000000001023,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html reads the location",
+          "status": "passed",
+          "title": "reads the location",
+          "duration": 0.5023750000000007,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html attaches a note to the highlight at the same location, before or after it",
+          "status": "passed",
+          "title": "attaches a note to the highlight at the same location, before or after it",
+          "duration": 0.11204200000000242,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["kindle notebook html"],
+          "fullName": "kindle notebook html does not emit notes as highlights",
+          "status": "failed",
+          "title": "does not emit notes as highlights",
+          "duration": 4.0007499999999965,
+          "failureMessages": [
+            "AssertionError: expected [ { text: 'tropes,', …(6) }, …(12) ] to have a length of 14 but got 13\n    at Proxy.<anonymous> (file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/index.uwTEEBsB.js:2163:20)\n    at Proxy.<anonymous> (file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/index.uwTEEBsB.js:1958:14)\n    at Proxy.methodWrapper (file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/chai@6.3.0/node_modules/chai/index.js:1737:25)\n    at /Users/mausv/Development/Galaxy/bookworm/src/importers/kindle-html.test.ts:50:29\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:1632:35\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:2794:26\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3334:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3329:10)\n    at file:///Users/mausv/Development/Galaxy/bookworm/node_modules/.pnpm/vitest@5.0.4_@types+node@22.20.5_vite@8.3.4_@types+node@22.20.5_esbuild@0.28.2_jiti@2.7.0_tsx@4.23.15_yaml@2.9.1_/node_modules/vitest/dist/chunks/run.Cm2sd7-x.js:3314:20"
+          ],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["legacy desktop notebook html"],
+          "fullName": "legacy desktop notebook html repairs mismatched h2/h3 markup and keeps every highlight",
+          "status": "passed",
+          "title": "repairs mismatched h2/h3 markup and keeps every highlight",
+          "duration": 0.1868340000000046,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["legacy desktop notebook html"],
+          "fullName": "legacy desktop notebook html reads page and location from localized headings",
+          "status": "passed",
+          "title": "reads page and location from localized headings",
+          "duration": 0.5764999999999816,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["legacy desktop notebook html"],
+          "fullName": "legacy desktop notebook html joins multiple text blocks under one heading",
+          "status": "passed",
+          "title": "joins multiple text blocks under one heading",
+          "duration": 0.16608299999998621,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1792345220214,
+      "endTime": 1792345220221.166,
+      "status": "failed",
+      "message": "",
+      "name": "/Users/mausv/Development/Galaxy/bookworm/src/importers/kindle-html.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": ["normalizeText"],
+          "fullName": "normalizeText ignores case, curly quotes, whitespace and edge punctuation",
+          "status": "passed",
+          "title": "ignores case, curly quotes, whitespace and edge punctuation",
+          "duration": 1.4145000000000039,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["vocabTerm"],
+          "fullName": "vocabTerm strips surrounding punctuation",
+          "status": "passed",
+          "title": "strips surrounding punctuation",
+          "duration": 0.6181660000000022,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["suggestType"],
+          "fullName": "suggestType suggests vocab for one or two words",
+          "status": "passed",
+          "title": "suggests vocab for one or two words",
+          "duration": 0.13833300000000293,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["suggestType"],
+          "fullName": "suggestType suggests quote for longer passages and nothing in between",
+          "status": "passed",
+          "title": "suggests quote for longer passages and nothing in between",
+          "duration": 0.2184999999999917,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["cleanTitle"],
+          "fullName": "cleanTitle drops trailing author and Z-Library groups",
+          "status": "passed",
+          "title": "drops trailing author and Z-Library groups",
+          "duration": 0.22333299999999667,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": ["cleanTitle"],
+          "fullName": "cleanTitle keeps meaningful parentheses",
+          "status": "passed",
+          "title": "keeps meaningful parentheses",
+          "duration": 0.06775000000000375,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1792345220199,
+      "endTime": 1792345220202.2234,
+      "status": "passed",
+      "message": "",
+      "name": "/Users/mausv/Development/Galaxy/bookworm/src/importers/text.test.ts"
+    }
+  ]
+}
