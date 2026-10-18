@@ -15,9 +15,11 @@ import {
   listTags,
   updateHighlight,
 } from '@/lib/highlights'
+import { bookMarkdown, jsonDump, vocabTsv } from '@/lib/export'
 import { importContent } from '@/lib/import'
 import { deleteLore, listLore, unlinkLoreHighlight, updateLore, upsertLore } from '@/lib/lore'
 import { listConnectedClients, revokeConnectedClient } from '@/lib/oauth'
+import { answerQuiz, buildQuiz } from '@/lib/quiz'
 import {
   addTagsSchema,
   apiKeySchema,
@@ -29,6 +31,8 @@ import {
   loreInputSchema,
   loreKind,
   loreUpdateSchema,
+  quizAnswerSchema,
+  quizMode,
   source,
   vocabStatus,
   vocabUpdateSchema,
@@ -64,6 +68,10 @@ function query<T extends z.ZodType>(schema: T, value: string | undefined) {
   if (value === undefined || value === '') return undefined
   const parsed = schema.safeParse(value)
   return parsed.success ? (parsed.data as z.infer<T>) : undefined
+}
+
+function attachment(filename: string) {
+  return `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`
 }
 
 function pageParams(c: Context) {
@@ -195,6 +203,46 @@ export const api = new Hono<Env>()
     else resetColorMapping(source, color)
     return c.json({ mappings: listColorMappings(source) })
   })
+
+  .get('/quiz', (c) => {
+    const count = Number(c.req.query('count'))
+    const modeParam = c.req.query('mode')
+    return c.json({
+      questions: buildQuiz(
+        { bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') },
+        {
+          count: Number.isInteger(count) && count > 0 ? Math.min(count, 50) : undefined,
+          mode: modeParam === 'mixed' ? 'mixed' : query(quizMode, modeParam),
+        }
+      ),
+    })
+  })
+  .post('/quiz/answer', async (c) => {
+    const parsed = await parseJson(c, quizAnswerSchema)
+    if (!parsed.success) return invalid(c, parsed.error)
+    return respond(c, answerQuiz(parsed.data))
+  })
+
+  .get('/export/books/:id/markdown', (c) => {
+    const exported = bookMarkdown(c.req.param('id'))
+    if (!exported) return c.json({ error: 'Book not found' }, 404)
+    return c.body(exported.markdown, 200, {
+      'Content-Type': 'text/markdown; charset=utf-8',
+      'Content-Disposition': attachment(exported.filename),
+    })
+  })
+  .get('/export/vocab.tsv', (c) =>
+    c.body(vocabTsv({ bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') }), 200, {
+      'Content-Type': 'text/tab-separated-values; charset=utf-8',
+      'Content-Disposition': attachment('bookworm-vocab.tsv'),
+    })
+  )
+  .get('/export/json', (c) =>
+    c.body(JSON.stringify(jsonDump(), null, 2), 200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Content-Disposition': attachment(`bookworm-${new Date().toISOString().slice(0, 10)}.json`),
+    })
+  )
 
   .get('/api-keys', (c) => c.json({ keys: listApiKeys(c.get('userId')) }))
   .post('/api-keys', async (c) => {

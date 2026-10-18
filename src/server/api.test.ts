@@ -147,3 +147,32 @@ describe('settings', () => {
     expect((await call(`/api/api-keys/${created.id}`, { method: 'DELETE' })).status).toBe(200)
   })
 })
+
+describe('quiz and exports', () => {
+  it('builds a quiz and records answers', async () => {
+    const { items } = await (await call('/api/vocab?limit=200')).json()
+    for (const [i, v] of items.slice(0, 4).entries()) {
+      await json('PATCH', `/api/vocab/${v.id}`, { definition: `meaning ${i}` })
+    }
+    const { questions } = await (await call('/api/quiz?count=3&mode=choice')).json()
+    expect(questions).toHaveLength(3)
+    expect(questions[0].options).toHaveLength(4)
+    const res = await json('POST', '/api/quiz/answer', {
+      vocabId: questions[0].vocabId,
+      mode: 'choice',
+      direction: questions[0].direction,
+      answer: 'definitely wrong',
+    })
+    expect(await res.json()).toMatchObject({ correct: false, status: 'learning' })
+  })
+
+  it('downloads Markdown, TSV and JSON exports', async () => {
+    const { books } = await (await call('/api/books')).json()
+    const md = await call(`/api/export/books/${books[0].id}/markdown`)
+    expect(md.headers.get('content-type')).toContain('text/markdown')
+    expect(md.headers.get('content-disposition')).toContain('attachment')
+    expect(await md.text()).toContain('---\ntitle:')
+    expect(await (await call('/api/export/vocab.tsv')).text()).toMatch(/^#separator:tab/)
+    expect(await (await call('/api/export/json')).json()).toMatchObject({ format: 'bookworm' })
+  })
+})

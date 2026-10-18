@@ -3,10 +3,11 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { version } from '../../package.json'
 import { getBook, listBooks } from '@/lib/books'
-import { listHighlights } from '@/lib/highlights'
-import { listLore } from '@/lib/lore'
-import { highlightType, id, loreKind, vocabStatus } from '@/lib/validation'
-import { listVocab } from '@/lib/vocab'
+import { bookMarkdown } from '@/lib/export'
+import { addNote, addTags, classifyHighlights, listHighlights } from '@/lib/highlights'
+import { listLore, upsertLore } from '@/lib/lore'
+import { highlightType, id, loreKind, tags, vocabStatus } from '@/lib/validation'
+import { listVocab, setVocabStatus, updateVocab } from '@/lib/vocab'
 
 const INSTRUCTIONS = `Reading highlights from the user's books (Kindle, Readest), organized as book → chapter → highlight.
 Highlight types follow the user's color convention:
@@ -33,6 +34,7 @@ function reply(result: Record<string, unknown>): CallToolResult {
 }
 
 const read = { readOnlyHint: true }
+const write = { readOnlyHint: false, destructiveHint: false }
 
 const pageInput = {
   limit: z.number().int().min(1).max(200).default(50).describe('Page size (default 50)'),
@@ -230,6 +232,123 @@ export function createMcpServer() {
         items: result.items.map((h) => highlightItem(h, true)),
         nextCursor: result.nextCursor,
       })
+    }
+  )
+
+  server.registerTool(
+    'add_definition',
+    {
+      description:
+        'Write a definition for a vocab entry (marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep it short, dictionary-style, for the sense used in the highlight context. Optionally trim the term down to the word itself.',
+      inputSchema: {
+        vocab_id: id.describe('Vocab entry id from get_vocab'),
+        definition: z.string().trim().min(1).max(2000),
+        part_of_speech: z.string().trim().max(50).optional(),
+        example: z.string().trim().max(2000).optional().describe('A short example sentence'),
+        term: z
+          .string()
+          .trim()
+          .min(1)
+          .max(200)
+          .optional()
+          .describe('Corrected term, if the highlight included extra words'),
+      },
+      annotations: write,
+    },
+    ({ vocab_id, definition, part_of_speech, example, term }) => {
+      const result = updateVocab(vocab_id, {
+        definition,
+        definitionBy: 'claude',
+        ...(part_of_speech !== undefined && { partOfSpeech: part_of_speech }),
+        ...(example !== undefined && { example }),
+        ...(term !== undefined && { term }),
+      })
+      return reply(result.vocab ? { vocab: compact(result.vocab) } : result)
+    }
+  )
+
+  server.registerTool(
+    'classify_highlight',
+    {
+      description:
+        'Set the type of one or more highlights (vocab, quote, lore, unclassified). Classifying as vocab creates its vocab entry.',
+      inputSchema: {
+        highlight_ids: z.array(id).min(1).max(200),
+        type: highlightType,
+      },
+      annotations: write,
+    },
+    ({ highlight_ids, type }) => reply(classifyHighlights(highlight_ids, type))
+  )
+
+  server.registerTool(
+    'add_note',
+    {
+      description:
+        "Append a note to a highlight, below any existing note. Notes are shown as the user's notes, so only add what the user asked for.",
+      inputSchema: { highlight_id: id, note: z.string().trim().min(1).max(5000) },
+      annotations: write,
+    },
+    ({ highlight_id, note }) => {
+      const result = addNote(highlight_id, note)
+      if (!('highlight' in result) || !result.highlight) return reply(result)
+      return reply({ highlight: highlightItem(result.highlight, true) })
+    }
+  )
+
+  server.registerTool(
+    'upsert_lore_entry',
+    {
+      description:
+        'Create or update a lore wiki entry of a book, matched by name (case-insensitive). The body replaces the existing body when given; highlight_ids are added as source highlights (must belong to the book). Write bodies in Markdown and avoid spoilers beyond the highlights.',
+      inputSchema: {
+        book_id: bookId,
+        name: z.string().trim().min(1).max(200),
+        kind: loreKind,
+        body: z.string().max(20000).optional(),
+        highlight_ids: z.array(id).max(200).optional(),
+      },
+      annotations: write,
+    },
+    ({ book_id, name, kind, body, highlight_ids }) => {
+      if (!getBook(book_id)) return reply({ error: 'Book not found' })
+      const result = upsertLore({ bookId: book_id, name, kind, body, highlightIds: highlight_ids })
+      return reply({ created: result.created, lore: result.lore })
+    }
+  )
+
+  server.registerTool(
+    'add_tags',
+    {
+      description: 'Add tags to highlights (lowercased; existing tags are kept).',
+      inputSchema: { highlight_ids: z.array(id).min(1).max(200), tags: tags.min(1) },
+      annotations: write,
+    },
+    ({ highlight_ids, tags }) => reply(addTags(highlight_ids, tags))
+  )
+
+  server.registerTool(
+    'set_vocab_status',
+    {
+      description: 'Set the learning status of vocab entries: new, learning or known.',
+      inputSchema: { vocab_ids: z.array(id).min(1).max(200), status: vocabStatus },
+      annotations: write,
+    },
+    ({ vocab_ids, status }) => reply(setVocabStatus(vocab_ids, status))
+  )
+
+  server.registerTool(
+    'export_book_markdown',
+    {
+      description:
+        'Export a book as an Obsidian-friendly Markdown note: frontmatter, vocabulary and quotes by chapter, lore entries as [[wikilinks]].',
+      inputSchema: { book_id: bookId },
+      annotations: read,
+    },
+    ({ book_id }) => {
+      const exported = bookMarkdown(book_id)
+      if (!exported) return reply({ error: 'Book not found' })
+      return { content: [{ type: 'text', text: exported.markdown }] }
     }
   )
 

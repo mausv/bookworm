@@ -164,3 +164,90 @@ describe('get_lore and get_recent', () => {
     expect(none.items).toEqual([])
   })
 })
+
+describe('write tools', () => {
+  it('adds a definition marked as written by Claude, trimming the term', async () => {
+    const { items } = await callTool(
+      'get_vocab',
+      { book_id: bookId, missing_definition: true },
+      vocabList
+    )
+    const opulence = items.find((v) => v.term === 'opulence')
+    const { vocab } = await callTool(
+      'add_definition',
+      {
+        vocab_id: opulence?.id,
+        definition: 'great wealth or luxuriousness',
+        part_of_speech: 'noun',
+        term: 'Opulence',
+      },
+      z.object({ vocab: z.looseObject({ term: z.string(), definitionBy: z.string() }) })
+    )
+    expect(vocab).toMatchObject({ term: 'Opulence', definitionBy: 'claude', partOfSpeech: 'noun' })
+  })
+
+  it('classifies highlights and creates vocab entries', async () => {
+    const { items } = await callTool('search_highlights', { type: 'unclassified' }, list)
+    const result = await callTool(
+      'classify_highlight',
+      { highlight_ids: [items[0].id], type: 'vocab' },
+      z.object({ updated: z.number() })
+    )
+    expect(result.updated).toBe(1)
+    const vocab = await callTool('get_vocab', { book_id: bookId }, vocabList)
+    expect(vocab.items.map((v) => v.term)).toContain('she gasped in pain despite herself')
+  })
+
+  it('appends notes and adds tags', async () => {
+    const { items } = await callTool('search_highlights', { query: 'quarry' }, list)
+    const id = items[0].id
+    const noted = await callTool(
+      'add_note',
+      { highlight_id: id, note: 'hunting sense' },
+      z.object({ highlight: z.looseObject({ note: z.string() }) })
+    )
+    expect(noted.highlight.note).toBe('target, prey\n\nhunting sense')
+    await callTool(
+      'add_tags',
+      { highlight_ids: [id], tags: ['Hunting'] },
+      z.object({ tagged: z.number() })
+    )
+    const tagged = await callTool('search_highlights', { tag: 'hunting' }, list)
+    expect(tagged.items.map((h) => h.id)).toEqual([id])
+  })
+
+  it('upserts lore entries and rejects unknown books', async () => {
+    const { lore, created } = await callTool(
+      'upsert_lore_entry',
+      { book_id: bookId, name: 'Kelsier', kind: 'character', body: 'The Survivor.' },
+      z.object({ created: z.boolean(), lore: z.looseObject({ name: z.string() }) })
+    )
+    expect(created).toBe(true)
+    expect(lore.name).toBe('Kelsier')
+    const missing = await client.callTool({
+      name: 'upsert_lore_entry',
+      arguments: { book_id: 'nope', name: 'x', kind: 'other' },
+    })
+    expect(missing.isError).toBe(true)
+  })
+
+  it('sets vocab status', async () => {
+    const { items } = await callTool('get_vocab', { book_id: bookId, limit: 2 }, vocabList)
+    const result = await callTool(
+      'set_vocab_status',
+      { vocab_ids: items.map((v) => v.id), status: 'known' },
+      z.object({ updated: z.number() })
+    )
+    expect(result.updated).toBe(2)
+    const known = await callTool('get_vocab', { status: 'known' }, vocabList)
+    expect(known.items).toHaveLength(2)
+  })
+
+  it('exports a book as Markdown text', async () => {
+    const result = await client.callTool({
+      name: 'export_book_markdown',
+      arguments: { book_id: bookId },
+    })
+    expect(result.content).toEqual([{ type: 'text', text: expect.stringContaining('# Mistborn') }])
+  })
+})
