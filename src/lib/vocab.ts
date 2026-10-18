@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { book, chapter, highlight, vocabEntry } from '@/db/schema'
 import { vocabTerm } from '@/importers/text'
 import type { VocabStatus } from '@/shared/types'
-import { ownedVocabIds } from './access'
+import { chapterCondition, ownedVocabIds } from './access'
 import { page, type PageInput } from './page'
 
 export function ensureVocab(highlightId: string) {
@@ -54,7 +54,7 @@ export const vocabColumns = {
 export function vocabConditions(userId: string, filter: VocabFilter) {
   const conditions: SQL[] = [eq(book.userId, userId), eq(highlight.type, 'vocab')]
   if (filter.bookId) conditions.push(eq(highlight.bookId, filter.bookId))
-  if (filter.chapterId) conditions.push(eq(highlight.chapterId, filter.chapterId))
+  if (filter.chapterId) conditions.push(chapterCondition(filter.chapterId))
   if (filter.status) conditions.push(eq(vocabEntry.status, filter.status))
   if (filter.missingDefinition) {
     conditions.push(sql`(${vocabEntry.definition} is null or ${vocabEntry.definition} = '')`)

@@ -3,7 +3,7 @@ import { db } from '@/db'
 import { book, chapter, highlight, highlightTag, vocabEntry } from '@/db/schema'
 import { suggestType } from '@/importers/text'
 import type { HighlightType } from '@/shared/types'
-import { ownedHighlightIds } from './access'
+import { chapterCondition, ownedHighlightIds } from './access'
 import { page, type PageInput } from './page'
 import { ensureVocab } from './vocab'
 
@@ -62,7 +62,7 @@ function select() {
 export function listHighlights(userId: string, filter: HighlightFilter = {}) {
   const conditions: SQL[] = [eq(book.userId, userId)]
   if (filter.bookId) conditions.push(eq(highlight.bookId, filter.bookId))
-  if (filter.chapterId) conditions.push(eq(highlight.chapterId, filter.chapterId))
+  if (filter.chapterId) conditions.push(chapterCondition(filter.chapterId))
   if (filter.type) conditions.push(eq(highlight.type, filter.type))
   if (filter.since) conditions.push(gte(highlight.createdAt, filter.since))
   if (filter.q) {

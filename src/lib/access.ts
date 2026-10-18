@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db'
 import { book, highlight, loreEntry, vocabEntry } from '@/db/schema'
 
@@ -42,4 +42,10 @@ export function ownedLore(userId: string, loreId: string) {
     .innerJoin(book, eq(book.id, loreEntry.bookId))
     .where(and(eq(book.userId, userId), eq(loreEntry.id, loreId)))
     .get()
+}
+
+const NO_CHAPTER = 'none'
+
+export function chapterCondition(chapterId: string) {
+  return chapterId === NO_CHAPTER ? isNull(highlight.chapterId) : eq(highlight.chapterId, chapterId)
 }

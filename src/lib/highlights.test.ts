@@ -38,6 +38,9 @@ describe('listHighlights', () => {
   it('filters by type and chapter', () => {
     expect(listHighlights(userId, { type: 'lore' }).items.map((h) => h.id)).toEqual([elsewhere.id])
     expect(listHighlights(userId, { chapterId: prologue.id }).items).toHaveLength(2)
+    expect(listHighlights(userId, { bookId: book.id, chapterId: 'none' }).items).toEqual([
+      expect.objectContaining({ id: loose.id }),
+    ])
   })
 
   it('searches text and notes, treating % literally', () => {
