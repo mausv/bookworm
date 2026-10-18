@@ -89,7 +89,7 @@ export function ImportDialog({
         >
           <FileUp aria-hidden className="size-6 text-muted-foreground" />
           <span className="font-medium">Choose files or drop them here</span>
-          <span className="text-sm text-muted-foreground">.html, .htm or .txt</span>
+          <span className="text-sm text-muted-foreground">.html, .txt or .json</span>
           <input
             type="file"
             multiple
