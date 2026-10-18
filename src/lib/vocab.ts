@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, or, type SQL } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, or, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import { book, chapter, highlight, vocabEntry } from '@/db/schema'
 import { vocabTerm } from '@/importers/text'
@@ -99,6 +99,11 @@ export type VocabUpdate = Partial<
     'term' | 'definition' | 'partOfSpeech' | 'language' | 'example' | 'status' | 'definitionBy'
   >
 >
+
+export function setVocabStatus(ids: string[], status: VocabStatus) {
+  const { changes } = db.update(vocabEntry).set({ status }).where(inArray(vocabEntry.id, ids)).run()
+  return { updated: changes }
+}
 
 export function updateVocab(id: string, values: VocabUpdate) {
   const { changes } = db.update(vocabEntry).set(values).where(eq(vocabEntry.id, id)).run()

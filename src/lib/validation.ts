@@ -66,4 +66,13 @@ export const colorMappingSchema = z.object({
   type: highlightType.nullable(),
 })
 
+export const quizMode = z.enum(['choice', 'typed'])
+
+export const quizAnswerSchema = z.object({
+  vocabId: id,
+  mode: quizMode,
+  direction: z.enum(['term', 'definition']),
+  answer: z.string().max(2000),
+})
+
 export const apiKeySchema = z.object({ name: z.string().trim().min(1).max(100) })

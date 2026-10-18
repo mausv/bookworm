@@ -129,6 +129,16 @@ export function updateHighlight(id: string, { tags, ...values }: HighlightUpdate
   })
 }
 
+export function addNote(id: string, note: string) {
+  const found = db
+    .select({ note: highlight.note })
+    .from(highlight)
+    .where(eq(highlight.id, id))
+    .get()
+  if (!found) return { error: 'Highlight not found' }
+  return updateHighlight(id, { note: found.note ? `${found.note}\n\n${note}` : note })
+}
+
 export function classifyHighlights(ids: string[], type: HighlightType) {
   return db.transaction(() => {
     const { changes } = db.update(highlight).set({ type }).where(inArray(highlight.id, ids)).run()
