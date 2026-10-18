@@ -1,0 +1,14 @@
+import { cn } from '@/web/lib/utils'
+
+export function AppIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden className={cn('shrink-0', className)}>
+      <rect width="32" height="32" rx="8" fill="#2F3E5C" />
+      <path d="M5.5 9.8c3.6-1.3 7.2-1 9.9.9v13.4c-2.7-1.7-6.3-2-9.9-.8z" fill="#F7F3EA" />
+      <path d="M26.5 9.8c-3.6-1.3-7.2-1-9.9.9v13.4c2.7-1.7 6.3-2 9.9-.8z" fill="#F7F3EA" />
+      <rect x="7.6" y="13" width="5.8" height="1.8" rx=".9" fill="#E8B923" />
+      <rect x="7.6" y="16.4" width="4.4" height="1.8" rx=".9" fill="#E07A2E" />
+      <rect x="18.6" y="14.6" width="5.8" height="1.8" rx=".9" fill="#2AA7A9" />
+    </svg>
+  )
+}

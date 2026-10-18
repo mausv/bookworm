@@ -20,7 +20,7 @@
   "packageManager": "pnpm@10.23.0",
   "lint-staged": {
     "*.{ts,tsx,js,mjs,json,css,md}": "prettier --write",
-    "*.{ts,tsx}": "eslint --max-warnings=0"
+    "*.{ts,tsx}": "eslint --max-warnings=0 --no-warn-ignored"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
