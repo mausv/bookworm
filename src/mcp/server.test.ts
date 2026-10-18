@@ -5,18 +5,19 @@ import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import { setupTestDb } from '@/test/db'
 
-await setupTestDb()
+const { insertUser } = await setupTestDb()
+const userId = insertUser().id
 const { importContent } = await import('@/lib/import')
 const { upsertLore } = await import('@/lib/lore')
 const { createMcpServer } = await import('./server')
 
 const fixture = (name: string) =>
   fs.readFileSync(new URL(`../importers/fixtures/${name}`, import.meta.url), 'utf8')
-importContent(fixture('kindle-notebook.html'))
+importContent(userId, fixture('kindle-notebook.html'))
 
 const client = new Client({ name: 'test', version: '1.0.0' })
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
-await createMcpServer().connect(serverTransport)
+await createMcpServer(userId).connect(serverTransport)
 await client.connect(clientTransport)
 
 const item = z.looseObject({ id: z.string() })
@@ -37,7 +38,7 @@ async function callTool<T extends z.ZodType>(
   return schema.parse(result.structuredContent)
 }
 
-function getBook(id: string) {
+function fetchBook(id: string) {
   return callTool('get_book', { book_id: id }, z.looseObject({ chapters: z.array(named) }))
 }
 
@@ -63,7 +64,7 @@ describe('list_books and get_book', () => {
   })
 
   it('summarizes a book with its chapters', async () => {
-    const book = await getBook(bookId)
+    const book = await fetchBook(bookId)
     expect(book.chapters.map((c) => c.title)).toEqual([
       'Preface',
       'Prologue',
@@ -115,7 +116,7 @@ describe('search_highlights', () => {
 
 describe('get_vocab', () => {
   it('lists entries missing a definition, scoped to a chapter', async () => {
-    const book = await getBook(bookId)
+    const book = await fetchBook(bookId)
     const chapter8 = book.chapters.find((c) => c.title === 'Chapter 8')
     const { items } = await callTool(
       'get_vocab',
@@ -141,7 +142,12 @@ describe('get_vocab', () => {
 describe('get_lore and get_recent', () => {
   it('returns lore entries with their highlights', async () => {
     const { items } = await callTool('search_highlights', { type: 'lore' }, list)
-    upsertLore({ bookId, name: 'Preservation', kind: 'concept', highlightIds: [items[0].id] })
+    upsertLore(userId, {
+      bookId,
+      name: 'Preservation',
+      kind: 'concept',
+      highlightIds: [items[0].id],
+    })
     const { entries } = await callTool(
       'get_lore',
       { book_id: bookId },

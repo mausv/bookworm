@@ -30,15 +30,17 @@ CREATE UNIQUE INDEX `api_key_key_hash_unique` ON `api_key` (`key_hash`);--> stat
 CREATE INDEX `api_key_user_idx` ON `api_key` (`user_id`);--> statement-breakpoint
 CREATE TABLE `book` (
 	`id` text PRIMARY KEY NOT NULL,
+	`user_id` text NOT NULL,
 	`title` text NOT NULL,
 	`author` text,
 	`match_key` text NOT NULL,
 	`language` text DEFAULT 'en' NOT NULL,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `book_match_key_unique` ON `book` (`match_key`);--> statement-breakpoint
+CREATE UNIQUE INDEX `book_user_match_uidx` ON `book` (`user_id`,`match_key`);--> statement-breakpoint
 CREATE TABLE `chapter` (
 	`id` text PRIMARY KEY NOT NULL,
 	`book_id` text NOT NULL,
@@ -49,10 +51,12 @@ CREATE TABLE `chapter` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `chapter_book_title_uidx` ON `chapter` (`book_id`,`title`);--> statement-breakpoint
 CREATE TABLE `color_mapping` (
+	`user_id` text NOT NULL,
 	`source` text NOT NULL,
 	`color` text NOT NULL,
 	`type` text NOT NULL,
-	PRIMARY KEY(`source`, `color`)
+	PRIMARY KEY(`user_id`, `source`, `color`),
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `highlight` (

@@ -24,11 +24,11 @@ export async function setupTestDb() {
       .get()
   }
 
-  function insertBook(values: Partial<typeof schema.book.$inferInsert> = {}) {
+  function insertBook(userId: string, values: Partial<typeof schema.book.$inferInsert> = {}) {
     const title = values.title ?? `Book ${crypto.randomUUID()}`
     return db
       .insert(schema.book)
-      .values({ title, matchKey: crypto.randomUUID(), ...values })
+      .values({ userId, title, matchKey: crypto.randomUUID(), ...values })
       .returning()
       .get()
   }

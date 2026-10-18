@@ -1,8 +1,9 @@
 import { and, desc, eq, isNotNull, ne, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import { book, chapter, highlight, quizAttempt, vocabEntry } from '@/db/schema'
+import { quizAttempt, vocabEntry } from '@/db/schema'
 import type { VocabStatus } from '@/shared/types'
-import { vocabColumns, vocabConditions } from './vocab'
+import { ownedVocabIds } from './access'
+import { selectVocab, vocabConditions } from './vocab'
 
 export type QuizMode = 'choice' | 'typed'
 export type QuizDirection = 'term' | 'definition'
@@ -61,24 +62,20 @@ function defined() {
   return and(isNotNull(vocabEntry.definition), ne(vocabEntry.definition, ''))
 }
 
-function scopedVocab(scope: QuizScope) {
-  return db
-    .select(vocabColumns)
-    .from(vocabEntry)
-    .innerJoin(highlight, eq(highlight.id, vocabEntry.highlightId))
-    .innerJoin(book, eq(book.id, highlight.bookId))
-    .leftJoin(chapter, eq(chapter.id, highlight.chapterId))
-    .where(and(vocabConditions(scope), defined()))
+function scopedVocab(userId: string, scope: QuizScope) {
+  return selectVocab()
+    .where(and(vocabConditions(userId, scope), defined()))
     .all()
 }
 
 export function buildQuiz(
+  userId: string,
   scope: QuizScope,
   { count = 10, mode = 'mixed' }: { count?: number; mode?: QuizMode | 'mixed' } = {},
   random = Math.random
 ): QuizQuestion[] {
-  const inScope = scopedVocab(scope)
-  const pool = inScope.length >= 4 ? inScope : scopedVocab({})
+  const inScope = scopedVocab(userId, scope)
+  const pool = inScope.length >= 4 ? inScope : scopedVocab(userId, {})
   const order = { new: 0, learning: 0, known: 1 }
   const picked = shuffle(inScope, random)
     .sort((a, b) => order[a.status] - order[b.status])
@@ -151,8 +148,10 @@ export interface QuizAnswer {
   answer: string
 }
 
-export function answerQuiz({ vocabId, mode, direction, answer }: QuizAnswer) {
-  const entry = db.select().from(vocabEntry).where(eq(vocabEntry.id, vocabId)).get()
+export function answerQuiz(userId: string, { vocabId, mode, direction, answer }: QuizAnswer) {
+  const entry = ownedVocabIds(userId, [vocabId]).length
+    ? db.select().from(vocabEntry).where(eq(vocabEntry.id, vocabId)).get()
+    : undefined
   if (!entry) return { error: 'Vocab entry not found' }
   const expected = direction === 'term' ? entry.term : (entry.definition ?? '')
   const { correct, close } = isCorrect(answer, expected, mode, direction)

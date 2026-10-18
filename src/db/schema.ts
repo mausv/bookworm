@@ -286,15 +286,22 @@ export const apiKey = sqliteTable(
   (table) => [index('api_key_user_idx').on(table.userId)]
 )
 
-export const book = sqliteTable('book', {
-  id: id(),
-  title: text('title').notNull(),
-  author: text('author'),
-  matchKey: text('match_key').notNull().unique(),
-  language: text('language').default('en').notNull(),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-})
+export const book = sqliteTable(
+  'book',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    author: text('author'),
+    matchKey: text('match_key').notNull(),
+    language: text('language').default('en').notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [uniqueIndex('book_user_match_uidx').on(table.userId, table.matchKey)]
+)
 
 export const chapter = sqliteTable(
   'chapter',
@@ -405,11 +412,14 @@ export const loreHighlight = sqliteTable(
 export const colorMapping = sqliteTable(
   'color_mapping',
   {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
     source: text('source', { enum: SOURCES }).notNull(),
     color: text('color').notNull(),
     type: text('type', { enum: HIGHLIGHT_TYPES }).notNull(),
   },
-  (table) => [primaryKey({ columns: [table.source, table.color] })]
+  (table) => [primaryKey({ columns: [table.userId, table.source, table.color] })]
 )
 
 export const quizAttempt = sqliteTable(
@@ -433,6 +443,7 @@ export const userRelations = relations(user, ({ many }) => ({
   oauthRefreshTokens: many(oauthRefreshToken),
   oauthAccessTokens: many(oauthAccessToken),
   oauthConsents: many(oauthConsent),
+  books: many(book),
 }))
 
 export const sessionRelations = relations(session, ({ one, many }) => ({
@@ -503,7 +514,8 @@ export const apiKeyRelations = relations(apiKey, ({ one }) => ({
   user: one(user, { fields: [apiKey.userId], references: [user.id] }),
 }))
 
-export const bookRelations = relations(book, ({ many }) => ({
+export const bookRelations = relations(book, ({ one, many }) => ({
+  user: one(user, { fields: [book.userId], references: [user.id] }),
   chapters: many(chapter),
   highlights: many(highlight),
   loreEntries: many(loreEntry),

@@ -2,7 +2,8 @@ import fs from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
-await setupTestDb()
+const { insertUser } = await setupTestDb()
+const userId = insertUser().id
 const { importContent } = await import('./import')
 const { listHighlights, updateHighlight } = await import('./highlights')
 const { upsertLore } = await import('./lore')
@@ -10,26 +11,27 @@ const { listVocab, updateVocab } = await import('./vocab')
 const { bookMarkdown, jsonDump, vocabTsv } = await import('./export')
 
 const result = importContent(
+  userId,
   fs.readFileSync(new URL('../importers/fixtures/kindle-notebook.html', import.meta.url), 'utf8')
 )
 if ('error' in result) throw new Error(result.error)
 const bookId = result.books[0].bookId
 
-const quotes = listHighlights({ bookId, type: 'quote' }).items
-updateHighlight(quotes[0].id, { tags: ['comfort'] })
-const lore = listHighlights({ bookId, type: 'lore' }).items
-upsertLore({
+const quotes = listHighlights(userId, { bookId, type: 'quote' }).items
+updateHighlight(userId, quotes[0].id, { tags: ['comfort'] })
+const lore = listHighlights(userId, { bookId, type: 'lore' }).items
+upsertLore(userId, {
   bookId,
   name: 'Preservation',
   kind: 'concept',
   body: 'A god.',
   highlightIds: [lore[0].id],
 })
-const tropes = listVocab({ bookId }).items.find((v) => v.term === 'tropes')
-if (tropes) updateVocab(tropes.id, { definition: 'common themes', partOfSpeech: 'noun' })
+const tropes = listVocab(userId, { bookId }).items.find((v) => v.term === 'tropes')
+if (tropes) updateVocab(userId, tropes.id, { definition: 'common themes', partOfSpeech: 'noun' })
 
 describe('bookMarkdown', () => {
-  const exported = bookMarkdown(bookId)
+  const exported = bookMarkdown(userId, bookId)
   const markdown = exported?.markdown ?? ''
 
   it('starts with frontmatter', () => {
@@ -60,13 +62,13 @@ describe('bookMarkdown', () => {
   })
 
   it('returns undefined for a missing book', () => {
-    expect(bookMarkdown('nope')).toBeUndefined()
+    expect(bookMarkdown(userId, 'nope')).toBeUndefined()
   })
 })
 
 describe('vocabTsv', () => {
   it('writes an Anki header and one row per entry with tags', () => {
-    const lines = vocabTsv({ bookId }).trimEnd().split('\n')
+    const lines = vocabTsv(userId, { bookId }).trimEnd().split('\n')
     expect(lines.slice(0, 3)).toEqual(['#separator:tab', '#html:true', '#tags column:4'])
     expect(lines).toContain('tropes\t<i>noun</i> common themes\ttropes,\tbookworm Mistborn Preface')
     expect(lines).toHaveLength(3 + 9)
@@ -75,7 +77,7 @@ describe('vocabTsv', () => {
 
 describe('jsonDump', () => {
   it('includes every table with tags and lore links', () => {
-    const dump = jsonDump()
+    const dump = jsonDump(userId)
     expect(dump).toMatchObject({ format: 'bookworm', version: 1 })
     expect(dump.highlights).toHaveLength(13)
     expect(dump.highlights.find((h) => h.id === quotes[0].id)?.tags).toEqual(['comfort'])

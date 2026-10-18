@@ -27,13 +27,17 @@ export function dedupKey(h: Pick<ParsedHighlight, 'text' | 'locStart' | 'cfi' | 
   return `${normalizeText(h.text)}@${h.locStart ?? h.cfi ?? h.page ?? ''}`
 }
 
-function upsertBook(parsed: ParsedBook) {
+function upsertBook(userId: string, parsed: ParsedBook) {
   const matchKey = bookMatchKey(parsed.title, parsed.author)
   return (
-    db.select().from(book).where(eq(book.matchKey, matchKey)).get() ??
+    db
+      .select()
+      .from(book)
+      .where(and(eq(book.userId, userId), eq(book.matchKey, matchKey)))
+      .get() ??
     db
       .insert(book)
-      .values({ title: parsed.title, author: parsed.author, matchKey })
+      .values({ userId, title: parsed.title, author: parsed.author, matchKey })
       .returning()
       .get()
   )
@@ -55,8 +59,13 @@ function chapterIds(bookId: string, titles: (string | undefined)[]) {
   return ids
 }
 
-function importBook(parsed: ParsedBook, source: Source, colors: ColorMap): BookImportResult {
-  const target = upsertBook(parsed)
+function importBook(
+  userId: string,
+  parsed: ParsedBook,
+  source: Source,
+  colors: ColorMap
+): BookImportResult {
+  const target = upsertBook(userId, parsed)
   const chapters = chapterIds(
     target.id,
     parsed.highlights.map((h) => h.chapter)
@@ -118,18 +127,18 @@ function importBook(parsed: ParsedBook, source: Source, colors: ColorMap): BookI
   return result
 }
 
-export function importContent(content: string, source?: Source) {
+export function importContent(userId: string, content: string, source?: Source) {
   const importer = source
     ? importers.find((i) => i.source === source)
     : importers.find((i) => i.detect(content))
   if (!importer) return { error: 'Unrecognized file format' }
   const parsed = importer.parse(content)
   if (!parsed.some((b) => b.highlights.length)) return { error: 'No highlights found in the file' }
-  const colors = getColorMap(importer.source)
+  const colors = getColorMap(userId, importer.source)
   return db.transaction(() => ({
     source: importer.source,
     books: parsed
       .filter((b) => b.highlights.length)
-      .map((b) => importBook(b, importer.source, colors)),
+      .map((b) => importBook(userId, b, importer.source, colors)),
   }))
 }

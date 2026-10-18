@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
 await setupTestDb()
+vi.stubEnv('INVITE_CODE', 'open-sesame')
 const { auth } = await import('@/lib/auth')
 const { createApiKey } = await import('@/lib/api-keys')
 const { revokeConnectedClient } = await import('@/lib/oauth')
@@ -59,6 +60,7 @@ const signUpRes = await postJson('/api/auth/sign-up/email', {
   name: 'Reader',
   email: EMAIL,
   password: PASSWORD,
+  inviteCode: 'open-sesame',
 })
 const { user } = await signUpRes.json()
 const userId: string = user.id

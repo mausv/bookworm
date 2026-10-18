@@ -26,9 +26,8 @@ function json(method: string, path: string, body: unknown) {
 }
 
 describe('public endpoints', () => {
-  it('reports health and setup state', async () => {
+  it('reports health', async () => {
     expect(await (await app.request('/healthz')).json()).toEqual({ ok: true })
-    expect(await (await app.request('/api/setup')).json()).toEqual({ hasAccount: true })
   })
 
   it('rejects API calls without a session or key', async () => {
@@ -174,5 +173,56 @@ describe('quiz and exports', () => {
     expect(await md.text()).toContain('---\ntitle:')
     expect(await (await call('/api/export/vocab.tsv')).text()).toMatch(/^#separator:tab/)
     expect(await (await call('/api/export/json')).json()).toMatchObject({ format: 'bookworm' })
+  })
+})
+
+describe('isolation between users', () => {
+  const other = createApiKey(insertUser().id, 'Other').key
+
+  function asOther(path: string, init: RequestInit = {}) {
+    const headers = new Headers(init.headers)
+    headers.set('authorization', `Bearer ${other}`)
+    headers.set('content-type', 'application/json')
+    return app.request(`http://localhost:3000${path}`, { ...init, headers })
+  }
+
+  it("hides one user's library from another", async () => {
+    const { books } = await (await call('/api/books')).json()
+    const { items } = await (await call('/api/highlights?limit=1')).json()
+    expect((await (await asOther('/api/books')).json()).books).toEqual([])
+    expect((await asOther(`/api/books/${books[0].id}`)).status).toBe(404)
+    expect((await asOther(`/api/highlights/${items[0].id}`)).status).toBe(404)
+    expect((await (await asOther('/api/highlights')).json()).items).toEqual([])
+    expect((await asOther(`/api/export/books/${books[0].id}/markdown`)).status).toBe(404)
+  })
+
+  it("refuses to change another user's data", async () => {
+    const { items } = await (await call('/api/highlights?limit=1')).json()
+    const patch = await asOther(`/api/highlights/${items[0].id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ note: 'hijacked' }),
+    })
+    expect(patch.status).toBe(404)
+    const classify = await asOther('/api/highlights/classify', {
+      method: 'POST',
+      body: JSON.stringify({ ids: [items[0].id], type: 'quote' }),
+    })
+    expect(await classify.json()).toEqual({ updated: 0 })
+    expect((await asOther(`/api/highlights/${items[0].id}`, { method: 'DELETE' })).status).toBe(404)
+    const { highlight } = await (await call(`/api/highlights/${items[0].id}`)).json()
+    expect(highlight.note).not.toBe('hijacked')
+  })
+
+  it('keeps the same book separate per user on import', async () => {
+    const res = await asOther('/api/import', {
+      method: 'POST',
+      body: fixture('kindle-notebook.html'),
+    })
+    const { results } = await res.json()
+    const mine = (await (await call('/api/books')).json()).books.find(
+      (b: { title: string }) => b.title === 'Mistborn'
+    )
+    expect(results[0].books[0]).toMatchObject({ title: 'Mistborn', added: 13 })
+    expect(results[0].books[0].bookId).not.toBe(mine.id)
   })
 })

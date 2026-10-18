@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0c9fd0f7-f53d-4960-b49f-ec6df1fbe282",
+  "id": "a5b3a31e-9586-4dbe-876a-25348d8e7df9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -220,6 +220,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "title": {
           "name": "title",
           "type": "text",
@@ -267,15 +274,30 @@
         }
       },
       "indexes": {
-        "book_match_key_unique": {
-          "name": "book_match_key_unique",
+        "book_user_match_uidx": {
+          "name": "book_user_match_uidx",
           "columns": [
+            "user_id",
             "match_key"
           ],
           "isUnique": true
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "book_user_id_user_id_fk": {
+          "name": "book_user_id_user_id_fk",
+          "tableFrom": "book",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -344,6 +366,13 @@
     "color_mapping": {
       "name": "color_mapping",
       "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "source": {
           "name": "source",
           "type": "text",
@@ -367,14 +396,29 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "color_mapping_user_id_user_id_fk": {
+          "name": "color_mapping_user_id_user_id_fk",
+          "tableFrom": "color_mapping",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
-        "color_mapping_source_color_pk": {
+        "color_mapping_user_id_source_color_pk": {
           "columns": [
+            "user_id",
             "source",
             "color"
           ],
-          "name": "color_mapping_source_color_pk"
+          "name": "color_mapping_user_id_source_color_pk"
         }
       },
       "uniqueConstraints": {},

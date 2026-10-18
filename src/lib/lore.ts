@@ -2,8 +2,9 @@ import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { chapter, highlight, loreEntry, loreHighlight } from '@/db/schema'
 import type { LoreKind } from '@/shared/types'
+import { ownedLore, ownsBook } from './access'
 
-export function listLore(bookId: string, kind?: LoreKind) {
+function entriesOf(bookId: string, kind?: LoreKind) {
   const entries = db
     .select()
     .from(loreEntry)
@@ -37,6 +38,10 @@ export function listLore(bookId: string, kind?: LoreKind) {
   }))
 }
 
+export function listLore(userId: string, bookId: string, kind?: LoreKind) {
+  return ownsBook(userId, bookId) ? entriesOf(bookId, kind) : []
+}
+
 export interface LoreInput {
   bookId: string
   name: string
@@ -68,7 +73,15 @@ function link(loreId: string, bookId: string, highlightIds: string[]) {
   }
 }
 
-export function upsertLore({ bookId, name, kind, body, highlightIds = [] }: LoreInput) {
+function entryOf(bookId: string, id: string) {
+  return entriesOf(bookId).find((e) => e.id === id)
+}
+
+export function upsertLore(
+  userId: string,
+  { bookId, name, kind, body, highlightIds = [] }: LoreInput
+) {
+  if (!ownsBook(userId, bookId)) return { error: 'Book not found' }
   return db.transaction(() => {
     const existing = findByName(bookId, name.trim())
     const entry = existing
@@ -84,26 +97,31 @@ export function upsertLore({ bookId, name, kind, body, highlightIds = [] }: Lore
           .returning()
           .get()
     link(entry.id, bookId, highlightIds)
-    return { lore: listLore(bookId).find((e) => e.id === entry.id), created: !existing }
+    return { lore: entryOf(bookId, entry.id), created: !existing }
   })
 }
 
 export function updateLore(
+  userId: string,
   id: string,
   values: Partial<Pick<typeof loreEntry.$inferInsert, 'name' | 'kind' | 'body'>>
 ) {
-  const updated = db.update(loreEntry).set(values).where(eq(loreEntry.id, id)).returning().get()
-  if (!updated) return { error: 'Lore entry not found' }
-  return { lore: listLore(updated.bookId).find((e) => e.id === id) }
+  const owned = ownedLore(userId, id)
+  if (!owned) return { error: 'Lore entry not found' }
+  db.update(loreEntry).set(values).where(eq(loreEntry.id, id)).run()
+  return { lore: entryOf(owned.bookId, id) }
 }
 
-export function unlinkLoreHighlight(loreId: string, highlightId: string) {
+export function unlinkLoreHighlight(userId: string, loreId: string, highlightId: string) {
+  if (!ownedLore(userId, loreId)) return { error: 'Lore entry not found' }
   db.delete(loreHighlight)
     .where(and(eq(loreHighlight.loreId, loreId), eq(loreHighlight.highlightId, highlightId)))
     .run()
+  return {}
 }
 
-export function deleteLore(id: string) {
-  const { changes } = db.delete(loreEntry).where(eq(loreEntry.id, id)).run()
-  return changes ? {} : { error: 'Lore entry not found' }
+export function deleteLore(userId: string, id: string) {
+  if (!ownedLore(userId, id)) return { error: 'Lore entry not found' }
+  db.delete(loreEntry).where(eq(loreEntry.id, id)).run()
+  return {}
 }

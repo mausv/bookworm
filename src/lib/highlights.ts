@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, gte, inArray, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import { book, chapter, highlight, highlightTag, vocabEntry } from '@/db/schema'
 import { suggestType } from '@/importers/text'
 import type { HighlightType } from '@/shared/types'
+import { ownedHighlightIds } from './access'
 import { page, type PageInput } from './page'
 import { ensureVocab } from './vocab'
 
@@ -58,8 +59,8 @@ function select() {
     .leftJoin(vocabEntry, eq(vocabEntry.highlightId, highlight.id))
 }
 
-export function listHighlights(filter: HighlightFilter = {}) {
-  const conditions: SQL[] = []
+export function listHighlights(userId: string, filter: HighlightFilter = {}) {
+  const conditions: SQL[] = [eq(book.userId, userId)]
   if (filter.bookId) conditions.push(eq(highlight.bookId, filter.bookId))
   if (filter.chapterId) conditions.push(eq(highlight.chapterId, filter.chapterId))
   if (filter.type) conditions.push(eq(highlight.type, filter.type))
@@ -67,10 +68,7 @@ export function listHighlights(filter: HighlightFilter = {}) {
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q)}%`
     conditions.push(
-      or(
-        sql`${highlight.text} like ${pattern} escape '\\'`,
-        sql`${highlight.note} like ${pattern} escape '\\'`
-      ) as SQL
+      sql`(${highlight.text} like ${pattern} escape '\\' or ${highlight.note} like ${pattern} escape '\\')`
     )
   }
   if (filter.tag) {
@@ -99,8 +97,10 @@ export function listHighlights(filter: HighlightFilter = {}) {
   return { ...result, items: withTags(result.items) }
 }
 
-export function getHighlight(id: string) {
-  const row = select().where(eq(highlight.id, id)).get()
+export function getHighlight(userId: string, id: string) {
+  const row = select()
+    .where(and(eq(highlight.id, id), eq(book.userId, userId)))
+    .get()
   return row && withTags([row])[0]
 }
 
@@ -112,37 +112,33 @@ export interface HighlightUpdate {
   tags?: string[]
 }
 
-export function updateHighlight(id: string, { tags, ...values }: HighlightUpdate) {
+export function updateHighlight(userId: string, id: string, { tags, ...values }: HighlightUpdate) {
+  if (!ownedHighlightIds(userId, [id]).length) return { error: 'Highlight not found' }
   return db.transaction(() => {
     if (Object.keys(values).length) {
-      const { changes } = db.update(highlight).set(values).where(eq(highlight.id, id)).run()
-      if (!changes) return { error: 'Highlight not found' }
-    } else if (!db.select({ id: highlight.id }).from(highlight).where(eq(highlight.id, id)).get()) {
-      return { error: 'Highlight not found' }
+      db.update(highlight).set(values).where(eq(highlight.id, id)).run()
     }
     if (values.type === 'vocab') ensureVocab(id)
     if (tags) {
       db.delete(highlightTag).where(eq(highlightTag.highlightId, id)).run()
-      addTags([id], tags)
+      addTags(userId, [id], tags)
     }
-    return { highlight: getHighlight(id) }
+    return { highlight: getHighlight(userId, id) }
   })
 }
 
-export function addNote(id: string, note: string) {
-  const found = db
-    .select({ note: highlight.note })
-    .from(highlight)
-    .where(eq(highlight.id, id))
-    .get()
+export function addNote(userId: string, id: string, note: string) {
+  const found = getHighlight(userId, id)
   if (!found) return { error: 'Highlight not found' }
-  return updateHighlight(id, { note: found.note ? `${found.note}\n\n${note}` : note })
+  return updateHighlight(userId, id, { note: found.note ? `${found.note}\n\n${note}` : note })
 }
 
-export function classifyHighlights(ids: string[], type: HighlightType) {
+export function classifyHighlights(userId: string, ids: string[], type: HighlightType) {
+  const owned = ownedHighlightIds(userId, ids)
+  if (!owned.length) return { updated: 0 }
   return db.transaction(() => {
-    const { changes } = db.update(highlight).set({ type }).where(inArray(highlight.id, ids)).run()
-    if (type === 'vocab') ids.forEach(ensureVocab)
+    const { changes } = db.update(highlight).set({ type }).where(inArray(highlight.id, owned)).run()
+    if (type === 'vocab') owned.forEach(ensureVocab)
     return { updated: changes }
   })
 }
@@ -151,30 +147,26 @@ export function normalizeTags(tags: string[]) {
   return [...new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean))]
 }
 
-export function addTags(ids: string[], tags: string[]) {
-  const existing = db
-    .select({ id: highlight.id })
-    .from(highlight)
-    .where(inArray(highlight.id, ids))
-    .all()
-  const values = existing.flatMap(({ id }) =>
-    normalizeTags(tags).map((tag) => ({ highlightId: id, tag }))
-  )
+export function addTags(userId: string, ids: string[], tags: string[]) {
+  const owned = ownedHighlightIds(userId, ids)
+  const values = owned.flatMap((id) => normalizeTags(tags).map((tag) => ({ highlightId: id, tag })))
   if (values.length) db.insert(highlightTag).values(values).onConflictDoNothing().run()
-  return { tagged: existing.length }
+  return { tagged: owned.length }
 }
 
-export function deleteHighlight(id: string) {
-  const { changes } = db.delete(highlight).where(eq(highlight.id, id)).run()
-  return changes ? {} : { error: 'Highlight not found' }
+export function deleteHighlight(userId: string, id: string) {
+  if (!ownedHighlightIds(userId, [id]).length) return { error: 'Highlight not found' }
+  db.delete(highlight).where(eq(highlight.id, id)).run()
+  return {}
 }
 
-export function listTags(bookId?: string) {
+export function listTags(userId: string, bookId?: string) {
   return db
     .select({ tag: highlightTag.tag, count: sql<number>`count(*)` })
     .from(highlightTag)
     .innerJoin(highlight, eq(highlight.id, highlightTag.highlightId))
-    .where(bookId ? eq(highlight.bookId, bookId) : undefined)
+    .innerJoin(book, eq(book.id, highlight.bookId))
+    .where(and(eq(book.userId, userId), bookId ? eq(highlight.bookId, bookId) : undefined))
     .groupBy(highlightTag.tag)
     .orderBy(asc(highlightTag.tag))
     .all()

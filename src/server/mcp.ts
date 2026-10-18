@@ -23,7 +23,7 @@ export async function handleMcp(request: Request) {
   const userId = (await verifyAccessToken(token)) ?? verifyApiKey(token)
   if (!userId) return unauthorized(true)
 
-  const server = createMcpServer()
+  const server = createMcpServer(userId)
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

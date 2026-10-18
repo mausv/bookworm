@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { serveStatic } from '@hono/node-server/serve-static'
 import { Hono } from 'hono'
-import { auth, hasAccount } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { api } from './api'
 import { handleMcp } from './mcp'
 
@@ -10,7 +10,6 @@ export function createApp({ webRoot }: { webRoot?: string } = {}) {
   const app = new Hono()
 
   app.get('/healthz', (c) => c.json({ ok: true }))
-  app.get('/api/setup', (c) => c.json({ hasAccount: hasAccount() }))
   app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
   app.get('/.well-known/oauth-authorization-server', (c) => auth.handler(c.req.raw))
   app.get('/.well-known/oauth-protected-resource', (c) => auth.handler(c.req.raw))

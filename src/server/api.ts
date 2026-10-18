@@ -85,25 +85,27 @@ function pageParams(c: Context) {
 export const api = new Hono<Env>()
   .use(requireUser)
 
-  .get('/books', (c) => c.json({ books: listBooks() }))
+  .get('/books', (c) => c.json({ books: listBooks(c.get('userId')) }))
   .get('/books/:id', (c) => {
-    const book = getBook(c.req.param('id'))
+    const book = getBook(c.get('userId'), c.req.param('id'))
     return book ? c.json({ book }) : c.json({ error: 'Book not found' }, 404)
   })
   .patch('/books/:id', async (c) => {
     const parsed = await parseJson(c, bookUpdateSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return respond(c, updateBook(c.req.param('id'), parsed.data))
+    return respond(c, updateBook(c.get('userId'), c.req.param('id'), parsed.data))
   })
-  .delete('/books/:id', (c) => respond(c, deleteBook(c.req.param('id'))))
-  .get('/books/:id/tags', (c) => c.json({ tags: listTags(c.req.param('id')) }))
+  .delete('/books/:id', (c) => respond(c, deleteBook(c.get('userId'), c.req.param('id'))))
+  .get('/books/:id/tags', (c) => c.json({ tags: listTags(c.get('userId'), c.req.param('id')) }))
   .get('/books/:id/lore', (c) =>
-    c.json({ lore: listLore(c.req.param('id'), query(loreKind, c.req.query('kind'))) })
+    c.json({
+      lore: listLore(c.get('userId'), c.req.param('id'), query(loreKind, c.req.query('kind'))),
+    })
   )
 
   .get('/highlights', (c) =>
     c.json(
-      listHighlights({
+      listHighlights(c.get('userId'), {
         bookId: c.req.query('bookId'),
         chapterId: c.req.query('chapterId'),
         type: query(highlightType, c.req.query('type')),
@@ -114,29 +116,29 @@ export const api = new Hono<Env>()
     )
   )
   .get('/highlights/:id', (c) => {
-    const highlight = getHighlight(c.req.param('id'))
+    const highlight = getHighlight(c.get('userId'), c.req.param('id'))
     return highlight ? c.json({ highlight }) : c.json({ error: 'Highlight not found' }, 404)
   })
   .patch('/highlights/:id', async (c) => {
     const parsed = await parseJson(c, highlightUpdateSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return respond(c, updateHighlight(c.req.param('id'), parsed.data))
+    return respond(c, updateHighlight(c.get('userId'), c.req.param('id'), parsed.data))
   })
-  .delete('/highlights/:id', (c) => respond(c, deleteHighlight(c.req.param('id'))))
+  .delete('/highlights/:id', (c) => respond(c, deleteHighlight(c.get('userId'), c.req.param('id'))))
   .post('/highlights/classify', async (c) => {
     const parsed = await parseJson(c, classifySchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return c.json(classifyHighlights(parsed.data.ids, parsed.data.type))
+    return c.json(classifyHighlights(c.get('userId'), parsed.data.ids, parsed.data.type))
   })
   .post('/highlights/tags', async (c) => {
     const parsed = await parseJson(c, addTagsSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return c.json(addTags(parsed.data.ids, parsed.data.tags))
+    return c.json(addTags(c.get('userId'), parsed.data.ids, parsed.data.tags))
   })
 
   .get('/vocab', (c) =>
     c.json(
-      listVocab({
+      listVocab(c.get('userId'), {
         bookId: c.req.query('bookId'),
         chapterId: c.req.query('chapterId'),
         status: query(vocabStatus, c.req.query('status')),
@@ -146,30 +148,29 @@ export const api = new Hono<Env>()
     )
   )
   .get('/vocab/:id', (c) => {
-    const vocab = getVocab(c.req.param('id'))
+    const vocab = getVocab(c.get('userId'), c.req.param('id'))
     return vocab ? c.json({ vocab }) : c.json({ error: 'Vocab entry not found' }, 404)
   })
   .patch('/vocab/:id', async (c) => {
     const parsed = await parseJson(c, vocabUpdateSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return respond(c, updateVocab(c.req.param('id'), parsed.data))
+    return respond(c, updateVocab(c.get('userId'), c.req.param('id'), parsed.data))
   })
 
   .post('/lore', async (c) => {
     const parsed = await parseJson(c, loreInputSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return c.json(upsertLore(parsed.data))
+    return respond(c, upsertLore(c.get('userId'), parsed.data))
   })
   .patch('/lore/:id', async (c) => {
     const parsed = await parseJson(c, loreUpdateSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return respond(c, updateLore(c.req.param('id'), parsed.data))
+    return respond(c, updateLore(c.get('userId'), c.req.param('id'), parsed.data))
   })
-  .delete('/lore/:id', (c) => respond(c, deleteLore(c.req.param('id'))))
-  .delete('/lore/:id/highlights/:highlightId', (c) => {
-    unlinkLoreHighlight(c.req.param('id'), c.req.param('highlightId'))
-    return c.json({})
-  })
+  .delete('/lore/:id', (c) => respond(c, deleteLore(c.get('userId'), c.req.param('id'))))
+  .delete('/lore/:id/highlights/:highlightId', (c) =>
+    respond(c, unlinkLoreHighlight(c.get('userId'), c.req.param('id'), c.req.param('highlightId')))
+  )
 
   .post('/import', bodyLimit({ maxSize: 50 * 1024 * 1024 }), async (c) => {
     const sourceParam = c.req.query('source')
@@ -185,7 +186,10 @@ export const api = new Hono<Env>()
       files.push({ name: 'body', content: await c.req.text() })
     }
     if (!files.length) return c.json({ error: 'No file uploaded' }, 400)
-    const results = files.map((f) => ({ file: f.name, ...importContent(f.content, forced) }))
+    const results = files.map((f) => ({
+      file: f.name,
+      ...importContent(c.get('userId'), f.content, forced),
+    }))
     const failed = results.every((r) => 'error' in r)
     return c.json({ results }, failed ? 422 : 200)
   })
@@ -193,15 +197,15 @@ export const api = new Hono<Env>()
   .get('/colors/:source', (c) => {
     const parsed = source.safeParse(c.req.param('source'))
     if (!parsed.success) return c.json({ error: 'Unknown source' }, 404)
-    return c.json({ mappings: listColorMappings(parsed.data) })
+    return c.json({ mappings: listColorMappings(c.get('userId'), parsed.data) })
   })
   .put('/colors', async (c) => {
     const parsed = await parseJson(c, colorMappingSchema)
     if (!parsed.success) return invalid(c, parsed.error)
     const { source, color, type } = parsed.data
-    if (type) setColorMapping(source, color, type)
-    else resetColorMapping(source, color)
-    return c.json({ mappings: listColorMappings(source) })
+    if (type) setColorMapping(c.get('userId'), source, color, type)
+    else resetColorMapping(c.get('userId'), source, color)
+    return c.json({ mappings: listColorMappings(c.get('userId'), source) })
   })
 
   .get('/quiz', (c) => {
@@ -209,6 +213,7 @@ export const api = new Hono<Env>()
     const modeParam = c.req.query('mode')
     return c.json({
       questions: buildQuiz(
+        c.get('userId'),
         { bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') },
         {
           count: Number.isInteger(count) && count > 0 ? Math.min(count, 50) : undefined,
@@ -220,11 +225,11 @@ export const api = new Hono<Env>()
   .post('/quiz/answer', async (c) => {
     const parsed = await parseJson(c, quizAnswerSchema)
     if (!parsed.success) return invalid(c, parsed.error)
-    return respond(c, answerQuiz(parsed.data))
+    return respond(c, answerQuiz(c.get('userId'), parsed.data))
   })
 
   .get('/export/books/:id/markdown', (c) => {
-    const exported = bookMarkdown(c.req.param('id'))
+    const exported = bookMarkdown(c.get('userId'), c.req.param('id'))
     if (!exported) return c.json({ error: 'Book not found' }, 404)
     return c.body(exported.markdown, 200, {
       'Content-Type': 'text/markdown; charset=utf-8',
@@ -232,13 +237,20 @@ export const api = new Hono<Env>()
     })
   })
   .get('/export/vocab.tsv', (c) =>
-    c.body(vocabTsv({ bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') }), 200, {
-      'Content-Type': 'text/tab-separated-values; charset=utf-8',
-      'Content-Disposition': attachment('bookworm-vocab.tsv'),
-    })
+    c.body(
+      vocabTsv(c.get('userId'), {
+        bookId: c.req.query('bookId'),
+        chapterId: c.req.query('chapterId'),
+      }),
+      200,
+      {
+        'Content-Type': 'text/tab-separated-values; charset=utf-8',
+        'Content-Disposition': attachment('bookworm-vocab.tsv'),
+      }
+    )
   )
   .get('/export/json', (c) =>
-    c.body(JSON.stringify(jsonDump(), null, 2), 200, {
+    c.body(JSON.stringify(jsonDump(c.get('userId')), null, 2), 200, {
       'Content-Type': 'application/json; charset=utf-8',
       'Content-Disposition': attachment(`bookworm-${new Date().toISOString().slice(0, 10)}.json`),
     })

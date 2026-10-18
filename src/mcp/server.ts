@@ -61,7 +61,7 @@ function highlightItem(h: ReturnType<typeof listHighlights>['items'][number], wi
   })
 }
 
-export function createMcpServer() {
+export function createMcpServer(userId: string) {
   const server = new McpServer({ name: 'bookworm', version }, { instructions: INSTRUCTIONS })
 
   server.registerTool(
@@ -72,7 +72,7 @@ export function createMcpServer() {
     },
     () =>
       reply({
-        books: listBooks().map((b) =>
+        books: listBooks(userId).map((b) =>
           compact({
             id: b.id,
             title: b.title,
@@ -93,7 +93,7 @@ export function createMcpServer() {
       annotations: read,
     },
     ({ book_id }) => {
-      const book = getBook(book_id)
+      const book = getBook(userId, book_id)
       if (!book) return reply({ error: 'Book not found' })
       return reply(
         compact({
@@ -129,7 +129,7 @@ export function createMcpServer() {
       annotations: read,
     },
     ({ query, book_id, chapter_id, type, tag, since, limit, cursor }) => {
-      const result = listHighlights({
+      const result = listHighlights(userId, {
         q: query,
         bookId: book_id,
         chapterId: chapter_id,
@@ -161,7 +161,7 @@ export function createMcpServer() {
       annotations: read,
     },
     ({ book_id, chapter_id, status, missing_definition, limit, cursor }) => {
-      const result = listVocab({
+      const result = listVocab(userId, {
         bookId: book_id,
         chapterId: chapter_id,
         status,
@@ -201,7 +201,7 @@ export function createMcpServer() {
     },
     ({ book_id, kind }) =>
       reply({
-        entries: listLore(book_id, kind).map((e) =>
+        entries: listLore(userId, book_id, kind).map((e) =>
           compact({
             id: e.id,
             name: e.name,
@@ -227,7 +227,7 @@ export function createMcpServer() {
       annotations: read,
     },
     ({ since, type, limit, cursor }) => {
-      const result = listHighlights({ since: new Date(since), type, limit, cursor })
+      const result = listHighlights(userId, { since: new Date(since), type, limit, cursor })
       return reply({
         items: result.items.map((h) => highlightItem(h, true)),
         nextCursor: result.nextCursor,
@@ -256,7 +256,7 @@ export function createMcpServer() {
       annotations: write,
     },
     ({ vocab_id, definition, part_of_speech, example, term }) => {
-      const result = updateVocab(vocab_id, {
+      const result = updateVocab(userId, vocab_id, {
         definition,
         definitionBy: 'claude',
         ...(part_of_speech !== undefined && { partOfSpeech: part_of_speech }),
@@ -278,7 +278,7 @@ export function createMcpServer() {
       },
       annotations: write,
     },
-    ({ highlight_ids, type }) => reply(classifyHighlights(highlight_ids, type))
+    ({ highlight_ids, type }) => reply(classifyHighlights(userId, highlight_ids, type))
   )
 
   server.registerTool(
@@ -290,7 +290,7 @@ export function createMcpServer() {
       annotations: write,
     },
     ({ highlight_id, note }) => {
-      const result = addNote(highlight_id, note)
+      const result = addNote(userId, highlight_id, note)
       if (!('highlight' in result) || !result.highlight) return reply(result)
       return reply({ highlight: highlightItem(result.highlight, true) })
     }
@@ -311,8 +311,14 @@ export function createMcpServer() {
       annotations: write,
     },
     ({ book_id, name, kind, body, highlight_ids }) => {
-      if (!getBook(book_id)) return reply({ error: 'Book not found' })
-      const result = upsertLore({ bookId: book_id, name, kind, body, highlightIds: highlight_ids })
+      const result = upsertLore(userId, {
+        bookId: book_id,
+        name,
+        kind,
+        body,
+        highlightIds: highlight_ids,
+      })
+      if ('error' in result) return reply(result)
       return reply({ created: result.created, lore: result.lore })
     }
   )
@@ -324,7 +330,7 @@ export function createMcpServer() {
       inputSchema: { highlight_ids: z.array(id).min(1).max(200), tags: tags.min(1) },
       annotations: write,
     },
-    ({ highlight_ids, tags }) => reply(addTags(highlight_ids, tags))
+    ({ highlight_ids, tags }) => reply(addTags(userId, highlight_ids, tags))
   )
 
   server.registerTool(
@@ -334,7 +340,7 @@ export function createMcpServer() {
       inputSchema: { vocab_ids: z.array(id).min(1).max(200), status: vocabStatus },
       annotations: write,
     },
-    ({ vocab_ids, status }) => reply(setVocabStatus(vocab_ids, status))
+    ({ vocab_ids, status }) => reply(setVocabStatus(userId, vocab_ids, status))
   )
 
   server.registerTool(
@@ -346,7 +352,7 @@ export function createMcpServer() {
       annotations: read,
     },
     ({ book_id }) => {
-      const exported = bookMarkdown(book_id)
+      const exported = bookMarkdown(userId, book_id)
       if (!exported) return reply({ error: 'Book not found' })
       return { content: [{ type: 'text', text: exported.markdown }] }
     }

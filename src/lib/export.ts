@@ -1,4 +1,4 @@
-import { asc } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/db'
 import {
   book,
@@ -63,12 +63,12 @@ const KIND_HEADINGS: Record<(typeof LORE_KINDS)[number], string> = {
   other: 'Other',
 }
 
-export function bookMarkdown(bookId: string) {
-  const found = getBook(bookId)
+export function bookMarkdown(userId: string, bookId: string) {
+  const found = getBook(userId, bookId)
   if (!found) return undefined
-  const highlights = all((cursor) => listHighlights({ bookId, cursor, limit: 500 }))
-  const vocab = all((cursor) => listVocab({ bookId, cursor, limit: 500 }))
-  const lore = listLore(bookId)
+  const highlights = all((cursor) => listHighlights(userId, { bookId, cursor, limit: 500 }))
+  const vocab = all((cursor) => listVocab(userId, { bookId, cursor, limit: 500 }))
+  const lore = listLore(userId, bookId)
   const lines = [
     '---',
     `title: ${yamlString(found.title)}`,
@@ -159,8 +159,8 @@ function ankiTag(value: string) {
     .replace(/[^\p{L}\p{N}_:-]/gu, '')
 }
 
-export function vocabTsv(scope: { bookId?: string; chapterId?: string } = {}) {
-  const vocab = all((cursor) => listVocab({ ...scope, cursor, limit: 500 }))
+export function vocabTsv(userId: string, scope: { bookId?: string; chapterId?: string } = {}) {
+  const vocab = all((cursor) => listVocab(userId, { ...scope, cursor, limit: 500 }))
   const rows = vocab.map((v) => {
     const back = [v.partOfSpeech && `<i>${v.partOfSpeech}</i>`, v.definition]
       .filter(Boolean)
@@ -174,26 +174,51 @@ export function vocabTsv(scope: { bookId?: string; chapterId?: string } = {}) {
   return ['#separator:tab', '#html:true', '#tags column:4', ...rows, ''].join('\n')
 }
 
-export function jsonDump() {
-  const highlights = db.select().from(highlight).orderBy(asc(highlight.createdAt)).all()
-  const tags = db.select().from(highlightTag).all()
-  const lore = db.select().from(loreEntry).all()
-  const loreLinks = db.select().from(loreHighlight).all()
+export function jsonDump(userId: string) {
+  const books = db.select().from(book).where(eq(book.userId, userId)).orderBy(asc(book.title)).all()
+  const bookIds = books.map((b) => b.id)
+  const highlights = db
+    .select()
+    .from(highlight)
+    .where(inArray(highlight.bookId, bookIds))
+    .orderBy(asc(highlight.createdAt))
+    .all()
+  const highlightIds = highlights.map((h) => h.id)
+  const tags = db
+    .select()
+    .from(highlightTag)
+    .where(inArray(highlightTag.highlightId, highlightIds))
+    .all()
+  const lore = db.select().from(loreEntry).where(inArray(loreEntry.bookId, bookIds)).all()
+  const loreLinks = db
+    .select()
+    .from(loreHighlight)
+    .where(inArray(loreHighlight.highlightId, highlightIds))
+    .all()
   return {
     format: 'bookworm',
     version: 1,
     exportedAt: new Date().toISOString(),
-    books: db.select().from(book).orderBy(asc(book.title)).all(),
-    chapters: db.select().from(chapter).orderBy(asc(chapter.bookId), asc(chapter.position)).all(),
+    books: books.map(({ userId, ...b }) => b),
+    chapters: db
+      .select()
+      .from(chapter)
+      .where(inArray(chapter.bookId, bookIds))
+      .orderBy(asc(chapter.bookId), asc(chapter.position))
+      .all(),
     highlights: highlights.map((h) => ({
       ...h,
       tags: tags.filter((t) => t.highlightId === h.id).map((t) => t.tag),
     })),
-    vocab: db.select().from(vocabEntry).all(),
+    vocab: db.select().from(vocabEntry).where(inArray(vocabEntry.highlightId, highlightIds)).all(),
     lore: lore.map((e) => ({
       ...e,
       highlightIds: loreLinks.filter((l) => l.loreId === e.id).map((l) => l.highlightId),
     })),
-    colorMappings: db.select().from(colorMapping).all(),
+    colorMappings: db
+      .select({ source: colorMapping.source, color: colorMapping.color, type: colorMapping.type })
+      .from(colorMapping)
+      .where(eq(colorMapping.userId, userId))
+      .all(),
   }
 }

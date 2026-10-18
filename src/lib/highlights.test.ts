@@ -2,7 +2,8 @@ import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
-const { db, schema, insertBook, insertHighlight } = await setupTestDb()
+const { db, schema, insertBook, insertHighlight, insertUser } = await setupTestDb()
+const userId = insertUser().id
 const {
   addTags,
   classifyHighlights,
@@ -13,8 +14,8 @@ const {
   updateHighlight,
 } = await import('./highlights')
 
-const book = insertBook({ title: 'Mistborn' })
-const other = insertBook({ title: 'Elantris' })
+const book = insertBook(userId, { title: 'Mistborn' })
+const other = insertBook(userId, { title: 'Elantris' })
 const prologue = db
   .insert(schema.chapter)
   .values({ bookId: book.id, title: 'Prologue', position: 0 })
@@ -27,7 +28,7 @@ const elsewhere = insertHighlight(other.id, { text: 'Shaod 100% real', type: 'lo
 
 describe('listHighlights', () => {
   it('orders a book by chapter then location, unchaptered last', () => {
-    expect(listHighlights({ bookId: book.id }).items.map((h) => h.text)).toEqual([
+    expect(listHighlights(userId, { bookId: book.id }).items.map((h) => h.text)).toEqual([
       'ruddy',
       'soot',
       'unchaptered words here',
@@ -35,69 +36,69 @@ describe('listHighlights', () => {
   })
 
   it('filters by type and chapter', () => {
-    expect(listHighlights({ type: 'lore' }).items.map((h) => h.id)).toEqual([elsewhere.id])
-    expect(listHighlights({ chapterId: prologue.id }).items).toHaveLength(2)
+    expect(listHighlights(userId, { type: 'lore' }).items.map((h) => h.id)).toEqual([elsewhere.id])
+    expect(listHighlights(userId, { chapterId: prologue.id }).items).toHaveLength(2)
   })
 
   it('searches text and notes, treating % literally', () => {
-    expect(listHighlights({ q: '100%' }).items.map((h) => h.id)).toEqual([elsewhere.id])
-    expect(listHighlights({ q: '0%r' }).items).toEqual([])
-    updateHighlight(late.id, { note: 'ash from the sky' })
-    expect(listHighlights({ q: 'ASH' }).items.map((h) => h.id)).toEqual([late.id])
+    expect(listHighlights(userId, { q: '100%' }).items.map((h) => h.id)).toEqual([elsewhere.id])
+    expect(listHighlights(userId, { q: '0%r' }).items).toEqual([])
+    updateHighlight(userId, late.id, { note: 'ash from the sky' })
+    expect(listHighlights(userId, { q: 'ASH' }).items.map((h) => h.id)).toEqual([late.id])
   })
 
   it('paginates with a cursor', () => {
-    const first = listHighlights({ bookId: book.id, limit: 2 })
+    const first = listHighlights(userId, { bookId: book.id, limit: 2 })
     expect(first.items).toHaveLength(2)
-    const second = listHighlights({ bookId: book.id, limit: 2, cursor: first.nextCursor })
+    const second = listHighlights(userId, { bookId: book.id, limit: 2, cursor: first.nextCursor })
     expect(second.items.map((h) => h.text)).toEqual(['unchaptered words here'])
     expect(second.nextCursor).toBeNull()
   })
 
   it('suggests a type only for unclassified highlights', () => {
-    const items = listHighlights({ bookId: book.id }).items
+    const items = listHighlights(userId, { bookId: book.id }).items
     expect(items.find((h) => h.text === 'ruddy')?.suggestedType).toBe('vocab')
-    expect(listHighlights({ type: 'lore' }).items[0].suggestedType).toBeNull()
+    expect(listHighlights(userId, { type: 'lore' }).items[0].suggestedType).toBeNull()
   })
 })
 
 describe('updateHighlight', () => {
   it('creates a vocab entry when classified as vocab', () => {
-    const { highlight } = updateHighlight(early.id, { type: 'vocab' })
-    expect(highlight?.vocabId).toEqual(expect.any(String))
+    updateHighlight(userId, early.id, { type: 'vocab' })
+    expect(getHighlight(userId, early.id)?.vocabId).toEqual(expect.any(String))
   })
 
   it('keeps the vocab entry when reclassified away and back', () => {
-    const vocabId = getHighlight(early.id)?.vocabId
-    updateHighlight(early.id, { type: 'quote' })
-    updateHighlight(early.id, { type: 'vocab' })
-    expect(getHighlight(early.id)?.vocabId).toBe(vocabId)
+    const vocabId = getHighlight(userId, early.id)?.vocabId
+    updateHighlight(userId, early.id, { type: 'quote' })
+    updateHighlight(userId, early.id, { type: 'vocab' })
+    expect(getHighlight(userId, early.id)?.vocabId).toBe(vocabId)
   })
 
   it('replaces tags, normalized', () => {
-    updateHighlight(loose.id, { tags: ['Ash', 'ash ', 'skaa'] })
-    expect(getHighlight(loose.id)?.tags.sort()).toEqual(['ash', 'skaa'])
-    updateHighlight(loose.id, { tags: ['ash'] })
-    expect(getHighlight(loose.id)?.tags).toEqual(['ash'])
+    updateHighlight(userId, loose.id, { tags: ['Ash', 'ash ', 'skaa'] })
+    expect(getHighlight(userId, loose.id)?.tags.sort()).toEqual(['ash', 'skaa'])
+    updateHighlight(userId, loose.id, { tags: ['ash'] })
+    expect(getHighlight(userId, loose.id)?.tags).toEqual(['ash'])
   })
 
   it('reports a missing highlight', () => {
-    expect(updateHighlight('nope', { note: 'x' })).toEqual({ error: 'Highlight not found' })
-    expect(updateHighlight('nope', { tags: [] })).toEqual({ error: 'Highlight not found' })
+    expect(updateHighlight(userId, 'nope', { note: 'x' })).toEqual({ error: 'Highlight not found' })
+    expect(updateHighlight(userId, 'nope', { tags: [] })).toEqual({ error: 'Highlight not found' })
   })
 })
 
 describe('classifyHighlights and addTags', () => {
   it('classifies several highlights at once', () => {
-    expect(classifyHighlights([late.id, loose.id], 'vocab')).toEqual({ updated: 2 })
-    expect(getHighlight(late.id)?.vocabId).toEqual(expect.any(String))
+    expect(classifyHighlights(userId, [late.id, loose.id], 'vocab')).toEqual({ updated: 2 })
+    expect(getHighlight(userId, late.id)?.vocabId).toEqual(expect.any(String))
   })
 
   it('adds tags without removing existing ones and filters by tag', () => {
-    addTags([loose.id, elsewhere.id], ['Magic'])
-    expect(getHighlight(loose.id)?.tags.sort()).toEqual(['ash', 'magic'])
-    expect(listHighlights({ tag: 'magic' }).items).toHaveLength(2)
-    expect(listTags(book.id)).toEqual([
+    addTags(userId, [loose.id, elsewhere.id], ['Magic'])
+    expect(getHighlight(userId, loose.id)?.tags.sort()).toEqual(['ash', 'magic'])
+    expect(listHighlights(userId, { tag: 'magic' }).items).toHaveLength(2)
+    expect(listTags(userId, book.id)).toEqual([
       { tag: 'ash', count: 1 },
       { tag: 'magic', count: 1 },
     ])
@@ -106,7 +107,7 @@ describe('classifyHighlights and addTags', () => {
 
 describe('deleteHighlight', () => {
   it('removes it with its tags', () => {
-    expect(deleteHighlight(loose.id)).toEqual({})
+    expect(deleteHighlight(userId, loose.id)).toEqual({})
     expect(
       db
         .select()
@@ -114,6 +115,6 @@ describe('deleteHighlight', () => {
         .where(eq(schema.highlightTag.highlightId, loose.id))
         .all()
     ).toEqual([])
-    expect(deleteHighlight(loose.id)).toEqual({ error: 'Highlight not found' })
+    expect(deleteHighlight(userId, loose.id)).toEqual({ error: 'Highlight not found' })
   })
 })
