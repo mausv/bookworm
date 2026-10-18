@@ -11,7 +11,7 @@ import { type CardGrade, nextStatus, splitTerm } from '@/web/lib/review'
 import type { Page, Vocab } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import type { Scope } from '@/web/pages/review'
-import { SeenBadge, StatusChip } from './vocab-list'
+import { LookupLinks, SeenBadge, StatusChip, Translation } from './vocab-list'
 
 const FILTERS = {
   due: { label: 'cards.filterDue', statuses: ['new', 'learning'] },
@@ -153,6 +153,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
             ) : (
               <p className="text-muted-foreground">{t('cards.noDefinition')}</p>
             )}
+            <Translation vocab={card} />
             {card.definitionBy === 'claude' && (
               <p className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Sparkles aria-hidden className="size-3.5" />
@@ -165,6 +166,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
                 {card.example}
               </p>
             )}
+            <LookupLinks term={card.term} language={card.language} />
           </div>
         ) : (
           <Button

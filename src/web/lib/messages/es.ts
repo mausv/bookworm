@@ -157,6 +157,15 @@ export const es: Messages = {
   'vocab.example': 'Ejemplo',
   'vocab.examplePlaceholder': 'Una oración tuya',
   'vocab.status': 'Estado',
+  'vocab.translation': 'Traducción',
+  'vocab.translationPlaceholderEs': 'En español',
+  'vocab.translationPlaceholderEn': 'En inglés',
+  'vocab.translationDraft': 'borrador automático',
+  'vocab.lookupMeaning': 'Buscar en Google',
+  'vocab.lookupExamples': 'Oraciones de ejemplo',
+  'vocab.translateMissing': 'Traducir palabras faltantes',
+  'vocab.translating': 'Traduciendo…',
+  'vocab.translated': { one: 'Se tradujo 1 palabra', other: 'Se tradujeron {count} palabras' },
 
   'lore.newEntry': 'Nueva ficha',
   'lore.empty':

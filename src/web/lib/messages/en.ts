@@ -155,6 +155,15 @@ export const en = {
   'vocab.example': 'Example',
   'vocab.examplePlaceholder': 'A sentence of your own',
   'vocab.status': 'Status',
+  'vocab.translation': 'Translation',
+  'vocab.translationPlaceholderEs': 'In Spanish',
+  'vocab.translationPlaceholderEn': 'In English',
+  'vocab.translationDraft': 'machine draft',
+  'vocab.lookupMeaning': 'Look up in Google',
+  'vocab.lookupExamples': 'Example sentences',
+  'vocab.translateMissing': 'Translate missing words',
+  'vocab.translating': 'Translating…',
+  'vocab.translated': { one: 'Translated 1 word', other: 'Translated {count} words' },
 
   'lore.newEntry': 'New entry',
   'lore.empty':

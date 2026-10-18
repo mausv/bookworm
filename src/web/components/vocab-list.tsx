@@ -1,15 +1,16 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Sparkles } from 'lucide-react'
+import { ExternalLink, Languages, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { VOCAB_STATUSES, type VocabStatus } from '@/shared/types'
+import { translationTarget, VOCAB_STATUSES, type VocabStatus } from '@/shared/types'
 import { api } from '@/web/lib/api'
 import { groupByChapter, locationLabel } from '@/web/lib/highlights'
 import { useT } from '@/web/lib/i18n'
+import { examplesUrl, meaningUrl } from '@/web/lib/lookup'
 import { invalidateReading } from '@/web/lib/queries'
 import type { Page, Vocab, VocabDetail } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
@@ -43,6 +44,7 @@ export function VocabList({
 
   return (
     <div className="space-y-10">
+      <TranslateMissing bookId={bookId} />
       {(grouped ? groupByChapter(items) : [{ chapterId: null, chapter: null, items }]).map(
         (group, i) => (
           <section key={`${group.chapterId}-${i}`} className="space-y-6">
@@ -73,6 +75,71 @@ export function VocabList({
         </div>
       )}
     </div>
+  )
+}
+
+function TranslateMissing({ bookId }: { bookId: string }) {
+  const t = useT()
+  const queryClient = useQueryClient()
+  const features = useQuery({
+    queryKey: ['features'],
+    queryFn: () => api<{ autoTranslate: boolean }>('/features'),
+    staleTime: Infinity,
+  })
+  const translate = useMutation({
+    mutationFn: () =>
+      api<{ translated: number }>('/vocab/translate', { method: 'POST', json: { bookId } }),
+    onSuccess: async ({ translated }) => {
+      toast.success(t('vocab.translated', { count: translated }))
+      await invalidateReading(queryClient)
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  if (!features.data?.autoTranslate) return null
+  return (
+    <div className="flex justify-end">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={translate.isPending}
+        onClick={() => translate.mutate()}
+      >
+        <Languages aria-hidden />
+        {translate.isPending ? t('vocab.translating') : t('vocab.translateMissing')}
+      </Button>
+    </div>
+  )
+}
+
+export function Translation({ vocab }: { vocab: Pick<Vocab, 'translation' | 'translationBy'> }) {
+  const t = useT()
+  if (!vocab.translation) return null
+  return (
+    <span className="flex flex-wrap items-center gap-x-2 text-foreground">
+      <Languages aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+      <span className="font-medium">{vocab.translation}</span>
+      {vocab.translationBy === 'auto' && (
+        <span className="text-xs text-muted-foreground">{t('vocab.translationDraft')}</span>
+      )}
+    </span>
+  )
+}
+
+export function LookupLinks({ term, language }: { term: string; language: string | null }) {
+  const t = useT()
+  const link = buttonVariants({ variant: 'outline', size: 'sm' })
+  return (
+    <span className="flex flex-wrap gap-2">
+      <a className={link} href={meaningUrl(term, language)} target="_blank" rel="noreferrer">
+        <ExternalLink aria-hidden />
+        {t('vocab.lookupMeaning')}
+      </a>
+      <a className={link} href={examplesUrl(term, language)} target="_blank" rel="noreferrer">
+        <ExternalLink aria-hidden />
+        {t('vocab.lookupExamples')}
+      </a>
+    </span>
   )
 }
 
@@ -126,6 +193,7 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
         ) : (
           <span className="block text-muted-foreground italic">{t('vocab.noDefinition')}</span>
         )}
+        <Translation vocab={vocab} />
       </button>
       <div className="mt-1 space-y-2 text-sm text-muted-foreground">
         {vocab.definitionBy === 'claude' && (
@@ -142,6 +210,7 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
           )
         )}
         {vocab.example && <p className="font-serif text-base/relaxed italic">{vocab.example}</p>}
+        {editing && <LookupLinks term={vocab.term} language={vocab.language} />}
         {editing && <VocabEditor vocab={vocab} onDone={() => setEditing(false)} />}
       </div>
     </article>
@@ -182,12 +251,15 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
   const [definition, setDefinition] = useState(vocab.definition ?? '')
   const [partOfSpeech, setPartOfSpeech] = useState(vocab.partOfSpeech ?? '')
   const [example, setExample] = useState(vocab.example ?? '')
+  const [translation, setTranslation] = useState(vocab.translation ?? '')
+  const target = translationTarget(vocab.language)
   const [status, setStatus] = useState(vocab.status)
   const id = vocab.id
 
   const save = useMutation({
     mutationFn: () => {
       const nextDefinition = definition.trim() || null
+      const nextTranslation = translation.trim() || null
       return api(`/vocab/${id}`, {
         method: 'PATCH',
         json: {
@@ -198,6 +270,10 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
           status,
           ...(nextDefinition !== vocab.definition && {
             definitionBy: nextDefinition ? 'me' : null,
+          }),
+          ...(nextTranslation !== vocab.translation && {
+            translation: nextTranslation,
+            translationBy: nextTranslation ? 'me' : null,
           }),
         },
       })
@@ -243,6 +319,21 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
           id={`def-${id}`}
           value={definition}
           onChange={(e) => setDefinition(e.target.value)}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={`translation-${id}`}>{t('vocab.translation')}</Label>
+        <Input
+          id={`translation-${id}`}
+          value={translation}
+          onChange={(e) => setTranslation(e.target.value)}
+          placeholder={
+            target === 'es'
+              ? t('vocab.translationPlaceholderEs')
+              : target === 'en'
+                ? t('vocab.translationPlaceholderEn')
+                : undefined
+          }
         />
       </div>
       <div className="space-y-1.5">

@@ -15,6 +15,7 @@ Self-hosted hub for reading highlights. Import from the Kindle app and Kindle de
 - Review: flashcards and a quiz (multiple choice or typed, scoped to all books, a book or a chapter). Three correct answers in a row mark a word known.
 - Exports: Obsidian Markdown per book, Anki TSV, full JSON dump.
 - Each account has its own private library. Sign-up needs `INVITE_CODE`.
+- Vocab entries carry an English↔Spanish translation (English books get Spanish, Spanish books get English). With `DEEPL_API_KEY` set, new words get a machine draft; Claude (`set_translations`) or you can correct it. Each word has Google links for its meaning and example sentences.
 
 ## Importing
 
@@ -47,7 +48,7 @@ Settings lists connected apps; revoking one cuts off its tokens immediately.
 Tools (list tools return `{ items, nextCursor }`):
 
 - Read: `list_books`, `get_book`, `search_highlights`, `get_vocab`, `get_lore`, `get_recent`
-- Write: `add_definition`, `classify_highlight`, `add_note`, `upsert_lore_entry`, `add_tags`, `set_vocab_status`
+- Write: `add_highlight`, `add_definition`, `set_translations`, `classify_highlight`, `add_note`, `upsert_lore_entry`, `add_tags`, `set_vocab_status`
 - Export: `export_book_markdown`
 
 Try: "Define every vocab word in chapter 8 of Mistborn that's missing a definition" or "Build lore entries for the main characters from my blue highlights".
@@ -66,13 +67,14 @@ pnpm dev               # API on :3000, web on :5173
 
 One image, no external services. Migrations run on startup.
 
-| Env var              | Required    | Notes                                                              |
-| -------------------- | ----------- | ------------------------------------------------------------------ |
-| `BETTER_AUTH_SECRET` | yes         | `openssl rand -base64 32`                                          |
-| `BETTER_AUTH_URL`    | yes         | Public URL, no trailing slash, e.g. `https://bookworm.example.com` |
-| `INVITE_CODE`        | for sign-up | Unset means nobody can sign up                                     |
-| `PORT`               | no          | Default `3000`                                                     |
-| `DATA_DIR`           | no          | Default `/data` in the image                                       |
+| Env var              | Required    | Notes                                                                    |
+| -------------------- | ----------- | ------------------------------------------------------------------------ |
+| `BETTER_AUTH_SECRET` | yes         | `openssl rand -base64 32`                                                |
+| `BETTER_AUTH_URL`    | yes         | Public URL, no trailing slash, e.g. `https://bookworm.example.com`       |
+| `INVITE_CODE`        | for sign-up | Unset means nobody can sign up                                           |
+| `DEEPL_API_KEY`      | no          | DeepL API key (free tier ends in `:fx`); drafts EN↔ES vocab translations |
+| `PORT`               | no          | Default `3000`                                                           |
+| `DATA_DIR`           | no          | Default `/data` in the image                                             |
 
 | Volume  | Contents                                                  |
 | ------- | --------------------------------------------------------- |
