@@ -1,0 +1,13 @@
+onlyBuiltDependencies:
+  - better-sqlite3
+ignoredBuiltDependencies:
+  - esbuild
+overrides:
+  '@better-auth/oauth-provider': 1.7.7
+packageExtensions:
+  '@better-auth/mcp@1.7.7':
+    dependencies:
+      '@better-auth/utils': 0.4.2
+  '@better-auth/oauth-provider@1.7.7':
+    dependencies:
+      '@better-auth/utils': 0.4.2

@@ -1,0 +1,8 @@
+node_modules
+dist
+pnpm-lock.yaml
+src/db/migrations
+src/components/ui
+src/importers/fixtures
+data
+.claude
