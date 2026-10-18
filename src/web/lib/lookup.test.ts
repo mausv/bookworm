@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { examplesUrl, meaningUrl } from './lookup'
+import { examplesUrl, meaningUrl, wiktionaryUrl } from './lookup'
 
 describe('Google lookups', () => {
   it('searches the meaning in the book language', () => {
@@ -20,5 +20,12 @@ describe('Google lookups', () => {
 
   it('falls back to English wording without a language hint for other languages', () => {
     expect(meaningUrl('jardin', 'fr')).toBe('https://www.google.com/search?q=jardin+meaning')
+  })
+})
+
+describe('wiktionaryUrl', () => {
+  it('links to the Wiktionary page in the book language', () => {
+    expect(wiktionaryUrl('nod off', 'en')).toBe('https://en.wiktionary.org/wiki/nod_off')
+    expect(wiktionaryUrl('zaguán', 'es')).toBe('https://es.wiktionary.org/wiki/zagu%C3%A1n')
   })
 })

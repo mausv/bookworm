@@ -179,17 +179,40 @@ describe('write tools', () => {
       vocabList
     )
     const opulence = items.find((v) => v.term === 'opulence')
-    const { vocab } = await callTool(
-      'add_definition',
+    const stifled = items.find((v) => v.term === 'stifled')
+    const result = await callTool(
+      'add_definitions',
       {
-        vocab_id: opulence?.id,
-        definition: 'great wealth or luxuriousness',
-        part_of_speech: 'noun',
-        term: 'Opulence',
+        entries: [
+          {
+            vocab_id: opulence?.id,
+            definition: 'great wealth or luxuriousness',
+            part_of_speech: 'noun',
+            term: 'Opulence',
+          },
+          { vocab_id: stifled?.id, definition: 'held back, suppressed', translation: 'contenido' },
+          { vocab_id: 'nope', definition: 'x' },
+        ],
       },
-      z.object({ vocab: z.looseObject({ term: z.string(), definitionBy: z.string() }) })
+      z.object({
+        updated: z.number(),
+        failed: z.array(z.object({ vocab_id: z.string(), error: z.string() })),
+      })
     )
-    expect(vocab).toMatchObject({ term: 'Opulence', definitionBy: 'claude', partOfSpeech: 'noun' })
+    expect(result).toEqual({
+      updated: 2,
+      failed: [{ vocab_id: 'nope', error: 'Vocab entry not found' }],
+    })
+    const after = await callTool('get_vocab', { book_id: bookId, limit: 200 }, vocabList)
+    expect(after.items.find((v) => v.id === opulence?.id)).toMatchObject({
+      term: 'Opulence',
+      definitionBy: 'claude',
+      partOfSpeech: 'noun',
+    })
+    expect(after.items.find((v) => v.id === stifled?.id)).toMatchObject({
+      translation: 'contenido',
+      translationBy: 'claude',
+    })
   })
 
   it('classifies highlights and creates vocab entries', async () => {
@@ -306,20 +329,6 @@ describe('translations', () => {
       translationBy: 'claude',
     })
   })
-
-  it('takes a translation with a definition', async () => {
-    const { items } = await callTool(
-      'get_vocab',
-      { book_id: bookId, missing_translation: true, limit: 1 },
-      vocabList
-    )
-    const { vocab } = await callTool(
-      'add_definition',
-      { vocab_id: items[0].id, definition: 'to look', translation: 'mirar' },
-      z.object({ vocab: z.looseObject({ translation: z.string(), translationBy: z.string() }) })
-    )
-    expect(vocab).toMatchObject({ translation: 'mirar', translationBy: 'claude' })
-  })
 })
 
 describe('explanations and missing counts', () => {
@@ -333,24 +342,31 @@ describe('explanations and missing counts', () => {
     expect(book.missing.definitions).toBeGreaterThan(0)
   })
 
-  it('explains a quote and drops it from the missing list', async () => {
+  it('explains quotes in bulk and drops them from the missing list', async () => {
     const { items } = await callTool(
       'search_highlights',
       { book_id: bookId, type: 'quote', missing_explanation: true },
       list
     )
     expect(items).toHaveLength(2)
-    const { highlight } = await callTool(
-      'add_explanation',
-      { highlight_id: items[0].id, explanation: 'Vin notices comfort she has never had.' },
-      z.object({ highlight: z.looseObject({ explanation: z.string(), explanationBy: z.string() }) })
+    const result = await callTool(
+      'add_explanations',
+      {
+        entries: [
+          { highlight_id: items[0].id, explanation: 'Vin notices comfort she has never had.' },
+          { highlight_id: 'nope', explanation: 'x' },
+        ],
+      },
+      z.object({ updated: z.number(), notFound: z.array(z.string()) })
     )
-    expect(highlight).toMatchObject({ explanationBy: 'claude' })
+    expect(result).toEqual({ updated: 1, notFound: ['nope'] })
     const after = await callTool(
       'search_highlights',
       { book_id: bookId, type: 'quote', missing_explanation: true },
       list
     )
     expect(after.items).toHaveLength(1)
+    const explained = await callTool('search_highlights', { query: 'mattress' }, list)
+    expect(explained.items[0]).toMatchObject({ explanationBy: 'claude' })
   })
 })

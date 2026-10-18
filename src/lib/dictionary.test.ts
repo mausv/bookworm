@@ -13,6 +13,20 @@ const fixture = (name: string) =>
 const pages: Record<string, string> = {
   'https://en.wiktionary.org/api/rest_v1/page/definition/ruddy': fixture('en-ruddy.json'),
   'https://en.wiktionary.org/api/rest_v1/page/definition/nod%20off': fixture('en-nod-off.json'),
+  'https://en.wiktionary.org/api/rest_v1/page/definition/riled%20up': JSON.stringify({
+    en: [
+      {
+        partOfSpeech: 'Verb',
+        definitions: [{ definition: 'simple past and past participle of <a>rile up</a>' }],
+      },
+    ],
+  }),
+  'https://en.wiktionary.org/api/rest_v1/page/definition/rile%20up': JSON.stringify({
+    en: [{ partOfSpeech: 'Verb', definitions: [{ definition: 'To rile; to aggravate.' }] }],
+  }),
+  'https://en.wiktionary.org/api/rest_v1/page/definition/Luthadel': JSON.stringify({
+    en: [{ partOfSpeech: 'Proper noun', definitions: [{ definition: 'A city.' }] }],
+  }),
 }
 const spanish: Record<string, string> = { tolvanera: fixture('es-tolvanera.json') }
 const missingEs = JSON.stringify({ error: { code: 'missingtitle' } })
@@ -54,6 +68,16 @@ describe('lookup', () => {
       example: null,
       translation: 'dust devil',
     })
+  })
+
+  it('follows inflected forms to the base entry', async () => {
+    vi.stubGlobal('fetch', fetchMock)
+    expect((await lookup('riled up', 'en'))?.definition).toBe('To rile; to aggravate.')
+  })
+
+  it('skips proper nouns', async () => {
+    vi.stubGlobal('fetch', fetchMock)
+    expect(await lookup('Luthadel', 'en')).toBeNull()
   })
 
   it('returns null for unknown words', async () => {
@@ -105,7 +129,7 @@ describe('defineMissing', () => {
     expect(byTerm('tolvanera')).toMatchObject({
       definition: 'Remolino de polvo.',
       translation: 'dust devil',
-      translationBy: 'auto',
+      translationBy: 'dictionary',
     })
     expect(byTerm('xyzzy')?.definition).toBeNull()
   })

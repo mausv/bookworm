@@ -138,6 +138,27 @@ export const en = {
   'highlight.vocabNotePlaceholder': 'What it means, in your words',
   'highlight.notePlaceholder': 'Your thoughts',
   'highlight.tagsPlaceholder': 'Separate with commas',
+  'highlight.explanation': 'Explanation',
+  'highlight.explanationPlaceholder': 'What this line means in the story',
+  'highlight.explainedByClaude': 'Explained by Claude',
+  'missing.definitions': {
+    one: '1 word without a definition',
+    other: '{count} words without a definition',
+  },
+  'missing.explanations': {
+    one: '1 quote without an explanation',
+    other: '{count} quotes without an explanation',
+  },
+  'missing.only': 'Missing only',
+  'missing.lookUp': 'Look up in Wiktionary',
+  'missing.lookingUp': 'Looking up…',
+  'missing.lookedUp': 'Found {defined}, {notFound} not in Wiktionary',
+  'missing.copyPrompt': 'Copy prompt for Claude',
+  'missing.copied': 'Prompt copied. Paste it into Claude with Bookworm connected.',
+  'missing.promptDefinitions':
+    'Using Bookworm, define the vocab words in "{title}" that are missing a definition ({count} right now). Use the sentence each one came from, explain phrases and idioms in plain words, and add the English↔Spanish translation too.',
+  'missing.promptExplanations':
+    'Using Bookworm, explain the quotes in "{title}" that have no explanation yet ({count} right now): what each one means in the story, in one to three sentences.',
   'highlight.delete': 'Delete highlight',
   'highlight.deleteTitle': 'Delete this highlight?',
   'highlight.deleteDescription':
@@ -158,12 +179,9 @@ export const en = {
   'vocab.translation': 'Translation',
   'vocab.translationPlaceholderEs': 'In Spanish',
   'vocab.translationPlaceholderEn': 'In English',
-  'vocab.translationDraft': 'machine draft',
   'vocab.lookupMeaning': 'Look up in Google',
+  'vocab.fromWiktionary': 'From Wiktionary',
   'vocab.lookupExamples': 'Example sentences',
-  'vocab.translateMissing': 'Translate missing words',
-  'vocab.translating': 'Translating…',
-  'vocab.translated': { one: 'Translated 1 word', other: 'Translated {count} words' },
 
   'lore.newEntry': 'New entry',
   'lore.empty':

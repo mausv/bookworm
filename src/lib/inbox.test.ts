@@ -41,7 +41,7 @@ describe('processInbox', () => {
 describe('watchInbox', () => {
   it('imports files dropped while running', async () => {
     const { watchInbox } = await import('./inbox')
-    const watcher = watchInbox(20)
+    const watcher = watchInbox(20, 100)
     try {
       fs.writeFileSync(path.join(inbox, 'My Clippings.txt'), fixture('clippings-edge.txt'))
       await vi.waitFor(
@@ -54,5 +54,13 @@ describe('watchInbox', () => {
     } finally {
       watcher.close()
     }
+  })
+})
+
+describe('settling', () => {
+  it('leaves files that were just written for a later pass', () => {
+    fs.writeFileSync(path.join(inbox, 'fresh.txt'), 'still being written')
+    expect(processInbox(60_000)).toEqual([])
+    expect(fs.existsSync(path.join(inbox, 'fresh.txt'))).toBe(true)
   })
 })

@@ -10,7 +10,7 @@ import { translationTarget, VOCAB_STATUSES, type VocabStatus } from '@/shared/ty
 import { api } from '@/web/lib/api'
 import { groupByChapter, locationLabel } from '@/web/lib/highlights'
 import { useT } from '@/web/lib/i18n'
-import { examplesUrl, meaningUrl } from '@/web/lib/lookup'
+import { examplesUrl, meaningUrl, wiktionaryUrl } from '@/web/lib/lookup'
 import { invalidateReading } from '@/web/lib/queries'
 import type { Page, Vocab, VocabDetail } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
@@ -20,16 +20,21 @@ export function VocabList({
   bookId,
   chapterId,
   grouped,
+  missingOnly,
 }: {
   bookId: string
   chapterId?: string
   grouped: boolean
+  missingOnly: boolean
 }) {
   const t = useT()
+  const missingDefinition = missingOnly ? 'true' : undefined
   const query = useInfiniteQuery({
-    queryKey: ['vocab', { bookId, chapterId }],
+    queryKey: ['vocab', { bookId, chapterId, missingDefinition }],
     queryFn: ({ pageParam }) =>
-      api<Page<Vocab>>(withQuery('/vocab', { bookId, chapterId, cursor: pageParam })),
+      api<Page<Vocab>>(
+        withQuery('/vocab', { bookId, chapterId, missingDefinition, cursor: pageParam })
+      ),
     initialPageParam: '',
     getNextPageParam: (last) => last.nextCursor,
   })
@@ -44,7 +49,6 @@ export function VocabList({
 
   return (
     <div className="space-y-10">
-      <TranslateMissing bookId={bookId} />
       {(grouped ? groupByChapter(items) : [{ chapterId: null, chapter: null, items }]).map(
         (group, i) => (
           <section key={`${group.chapterId}-${i}`} className="space-y-6">
@@ -78,40 +82,6 @@ export function VocabList({
   )
 }
 
-function TranslateMissing({ bookId }: { bookId: string }) {
-  const t = useT()
-  const queryClient = useQueryClient()
-  const features = useQuery({
-    queryKey: ['features'],
-    queryFn: () => api<{ autoTranslate: boolean }>('/features'),
-    staleTime: Infinity,
-  })
-  const translate = useMutation({
-    mutationFn: () =>
-      api<{ translated: number }>('/vocab/translate', { method: 'POST', json: { bookId } }),
-    onSuccess: async ({ translated }) => {
-      toast.success(t('vocab.translated', { count: translated }))
-      await invalidateReading(queryClient)
-    },
-    onError: (error) => toast.error(error.message),
-  })
-
-  if (!features.data?.autoTranslate) return null
-  return (
-    <div className="flex justify-end">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={translate.isPending}
-        onClick={() => translate.mutate()}
-      >
-        <Languages aria-hidden />
-        {translate.isPending ? t('vocab.translating') : t('vocab.translateMissing')}
-      </Button>
-    </div>
-  )
-}
-
 export function Translation({ vocab }: { vocab: Pick<Vocab, 'translation' | 'translationBy'> }) {
   const t = useT()
   if (!vocab.translation) return null
@@ -119,8 +89,8 @@ export function Translation({ vocab }: { vocab: Pick<Vocab, 'translation' | 'tra
     <span className="flex flex-wrap items-center gap-x-2 text-foreground">
       <Languages aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
       <span className="font-medium">{vocab.translation}</span>
-      {vocab.translationBy === 'auto' && (
-        <span className="text-xs text-muted-foreground">{t('vocab.translationDraft')}</span>
+      {vocab.translationBy === 'dictionary' && (
+        <span className="text-xs text-muted-foreground">{t('vocab.fromWiktionary')}</span>
       )}
     </span>
   )
@@ -200,6 +170,18 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
           <p className="flex items-center gap-1">
             <Sparkles aria-hidden className="size-3.5" />
             {t('vocab.definedByClaude')}
+          </p>
+        )}
+        {vocab.definitionBy === 'dictionary' && (
+          <p>
+            <a
+              className="underline underline-offset-4 hover:text-foreground"
+              href={wiktionaryUrl(vocab.term, vocab.language)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('vocab.fromWiktionary')}
+            </a>
           </p>
         )}
         {editing && vocab.occurrences > 1 ? (

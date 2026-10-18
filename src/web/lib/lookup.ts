@@ -14,3 +14,8 @@ export function examplesUrl(term: string, language: string | null) {
     language
   )
 }
+
+export function wiktionaryUrl(term: string, language: string | null) {
+  const host = language === 'es' ? 'es.wiktionary.org' : 'en.wiktionary.org'
+  return `https://${host}/wiki/${encodeURIComponent(term.replace(/ /g, '_'))}`
+}

@@ -140,6 +140,24 @@ export const es: Messages = {
   'highlight.vocabNotePlaceholder': 'Qué significa, en tus palabras',
   'highlight.notePlaceholder': 'Lo que piensas',
   'highlight.tagsPlaceholder': 'Separa con comas',
+  'highlight.explanation': 'Explicación',
+  'highlight.explanationPlaceholder': 'Qué significa esta línea en la historia',
+  'highlight.explainedByClaude': 'Explicada por Claude',
+  'missing.definitions': {
+    one: '1 palabra sin definición',
+    other: '{count} palabras sin definición',
+  },
+  'missing.explanations': { one: '1 cita sin explicación', other: '{count} citas sin explicación' },
+  'missing.only': 'Solo faltantes',
+  'missing.lookUp': 'Buscar en Wiktionary',
+  'missing.lookingUp': 'Buscando…',
+  'missing.lookedUp': '{defined} encontradas, {notFound} no están en Wiktionary',
+  'missing.copyPrompt': 'Copiar prompt para Claude',
+  'missing.copied': 'Prompt copiado. Pégalo en Claude con Bookworm conectado.',
+  'missing.promptDefinitions':
+    'Usando Bookworm, define las palabras de vocabulario de "{title}" que no tienen definición ({count} por ahora). Usa la oración de la que salió cada una, explica las frases y modismos con palabras sencillas, y agrega también la traducción inglés↔español.',
+  'missing.promptExplanations':
+    'Usando Bookworm, explica las citas de "{title}" que aún no tienen explicación ({count} por ahora): qué significa cada una en la historia, en una a tres oraciones.',
   'highlight.delete': 'Eliminar subrayado',
   'highlight.deleteTitle': '¿Eliminar este subrayado?',
   'highlight.deleteDescription':
@@ -160,12 +178,9 @@ export const es: Messages = {
   'vocab.translation': 'Traducción',
   'vocab.translationPlaceholderEs': 'En español',
   'vocab.translationPlaceholderEn': 'En inglés',
-  'vocab.translationDraft': 'borrador automático',
   'vocab.lookupMeaning': 'Buscar en Google',
+  'vocab.fromWiktionary': 'De Wiktionary',
   'vocab.lookupExamples': 'Oraciones de ejemplo',
-  'vocab.translateMissing': 'Traducir palabras faltantes',
-  'vocab.translating': 'Traduciendo…',
-  'vocab.translated': { one: 'Se tradujo 1 palabra', other: 'Se tradujeron {count} palabras' },
 
   'lore.newEntry': 'Nueva ficha',
   'lore.empty':

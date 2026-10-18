@@ -109,4 +109,4 @@ export const quizAnswerSchema = z.object({
 
 export const apiKeySchema = z.object({ name: z.string().trim().min(1).max(100) })
 
-export const translateSchema = z.object({ bookId: id.optional() })
+export const scopeSchema = z.object({ bookId: id.optional() })

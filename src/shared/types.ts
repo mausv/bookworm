@@ -10,7 +10,7 @@ export type VocabStatus = (typeof VOCAB_STATUSES)[number]
 export const LORE_KINDS = ['character', 'place', 'faction', 'event', 'concept', 'other'] as const
 export type LoreKind = (typeof LORE_KINDS)[number]
 
-export const TRANSLATION_SOURCES = ['me', 'claude', 'auto'] as const
+export const TRANSLATION_SOURCES = ['me', 'claude', 'dictionary'] as const
 export type TranslationSource = (typeof TRANSLATION_SOURCES)[number]
 
 export function translationTarget(language: string | null) {

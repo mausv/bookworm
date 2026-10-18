@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { PenLine, Sparkles } from 'lucide-react'
+import { Lightbulb, PenLine, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -44,6 +44,23 @@ export function HighlightItem({ highlight }: { highlight: Highlight }) {
             )}
           </p>
         )}
+        {highlight.explanation && !editing && (
+          <div className="space-y-0.5 text-sm">
+            <p className="flex gap-2">
+              <Lightbulb
+                aria-label={t('highlight.explanation')}
+                className="mt-1 size-3.5 shrink-0 text-muted-foreground"
+              />
+              <span className="whitespace-pre-line">{highlight.explanation}</span>
+            </p>
+            {highlight.explanationBy === 'claude' && (
+              <p className="flex items-center gap-1 pl-5.5 text-xs text-muted-foreground">
+                <Sparkles aria-hidden className="size-3" />
+                {t('highlight.explainedByClaude')}
+              </p>
+            )}
+          </div>
+        )}
         {highlight.note && !editing && (
           <p className="flex gap-2 text-sm">
             <PenLine
@@ -73,16 +90,27 @@ function HighlightEditor({ highlight, onDone }: { highlight: Highlight; onDone: 
   const queryClient = useQueryClient()
   const [type, setType] = useState<HighlightType>(highlight.type)
   const [note, setNote] = useState(highlight.note ?? '')
+  const [explanation, setExplanation] = useState(highlight.explanation ?? '')
   const [tags, setTags] = useState(highlight.tags.join(', '))
   const [confirming, setConfirming] = useState(false)
   const id = highlight.id
 
   const save = useMutation({
-    mutationFn: () =>
-      api(`/highlights/${id}`, {
+    mutationFn: () => {
+      const nextExplanation = explanation.trim() || null
+      return api(`/highlights/${id}`, {
         method: 'PATCH',
-        json: { type, note: note.trim() || null, tags: parseTags(tags) },
-      }),
+        json: {
+          type,
+          note: note.trim() || null,
+          tags: parseTags(tags),
+          ...(nextExplanation !== highlight.explanation && {
+            explanation: nextExplanation,
+            explanationBy: nextExplanation ? 'me' : null,
+          }),
+        },
+      })
+    },
     onSuccess: async () => {
       await invalidateReading(queryClient)
       onDone()
@@ -120,6 +148,17 @@ function HighlightEditor({ highlight, onDone }: { highlight: Highlight; onDone: 
           }
         />
       </div>
+      {(type === 'quote' || highlight.explanation) && (
+        <div className="space-y-1.5">
+          <Label htmlFor={`explanation-${id}`}>{t('highlight.explanation')}</Label>
+          <Textarea
+            id={`explanation-${id}`}
+            value={explanation}
+            onChange={(e) => setExplanation(e.target.value)}
+            placeholder={t('highlight.explanationPlaceholder')}
+          />
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label htmlFor={`tags-${id}`}>{t('field.tags')}</Label>
         <Input

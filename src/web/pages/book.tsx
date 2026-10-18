@@ -10,6 +10,7 @@ import { AddHighlightDialog } from '@/web/components/add-highlight-dialog'
 import { BookHeader } from '@/web/components/book-header'
 import { HighlightList } from '@/web/components/highlight-list'
 import { LoreEntries } from '@/web/components/lore-entries'
+import { MissingPanel } from '@/web/components/missing-panel'
 import { TYPE_BG } from '@/web/components/type-style'
 import { VocabList } from '@/web/components/vocab-list'
 import { useDebouncedValue } from '@/web/hooks/use-debounced-value'
@@ -50,6 +51,7 @@ function BookView({ book }: { book: BookDetail }) {
     'vocab'
   const chapter = params.get('chapter') ?? undefined
   const tag = params.get('tag') ?? undefined
+  const missingOnly = params.get('missing') === '1'
   const entries = tab === 'lore' && params.get('view') === 'entries'
   const [search, setSearch] = useState('')
   const q = useDebouncedValue(search.trim())
@@ -198,9 +200,26 @@ function BookView({ book }: { book: BookDetail }) {
             ))}
           </ul>
         )}
+
+        {(tab === 'vocab' || tab === 'quote') && !entries && (
+          <MissingPanel
+            book={book}
+            kind={tab === 'vocab' ? 'definitions' : 'explanations'}
+            missingOnly={missingOnly}
+            onToggle={() => update({ missing: missingOnly ? undefined : '1' })}
+          />
+        )}
       </div>
 
-      <TabContent book={book} tab={tab} entries={entries} chapter={chapter} q={q} tag={tag} />
+      <TabContent
+        book={book}
+        tab={tab}
+        entries={entries}
+        chapter={chapter}
+        q={q}
+        tag={tag}
+        missingOnly={missingOnly}
+      />
 
       <AddHighlightDialog open={adding} onOpenChange={setAdding} book={book} defaultType={tab} />
     </div>
@@ -214,6 +233,7 @@ function TabContent({
   chapter,
   q,
   tag,
+  missingOnly,
 }: {
   book: BookDetail
   tab: HighlightType
@@ -221,14 +241,26 @@ function TabContent({
   chapter?: string
   q: string
   tag?: string
+  missingOnly: boolean
 }) {
   if (entries) return <LoreEntries bookId={book.id} />
   const grouped = !chapter && book.chapters.length > 0
-  if (tab === 'vocab') return <VocabList bookId={book.id} chapterId={chapter} grouped={grouped} />
+  if (tab === 'vocab') {
+    return (
+      <VocabList bookId={book.id} chapterId={chapter} grouped={grouped} missingOnly={missingOnly} />
+    )
+  }
   return (
     <HighlightList
       grouped={grouped}
-      filter={{ bookId: book.id, type: tab, chapterId: chapter, q: q || undefined, tag }}
+      filter={{
+        bookId: book.id,
+        type: tab,
+        chapterId: chapter,
+        q: q || undefined,
+        tag,
+        missingExplanation: tab === 'quote' && missingOnly ? 'true' : undefined,
+      }}
     />
   )
 }

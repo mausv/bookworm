@@ -39,16 +39,23 @@ async function get(url: string) {
   return fetch(url, { headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' } })
 }
 
-async function lookupEnglish(term: string): Promise<DictionaryEntry | null> {
+// Inflected forms ("simple past and past participle of rile up") only point at the lemma.
+const FORM_OF =
+  /^(?:.*\b(?:past|participle|plural|third-person|comparative|superlative|alternative (?:form|spelling)|obsolete (?:form|spelling)|misspelling)\b.*?\bof) (.+?)\.?$/i
+
+async function lookupEnglish(term: string, followForms = true): Promise<DictionaryEntry | null> {
   const res = await get(
     `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(term)}`
   )
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`Wiktionary request failed (${res.status})`)
   for (const section of enSchema.parse(await res.json()).en ?? []) {
+    if (section.partOfSpeech === 'Proper noun') continue
     for (const sense of section.definitions) {
       const definition = htmlText(sense.definition)
       if (!definition) continue
+      const lemma = definition.match(FORM_OF)?.[1]
+      if (lemma) return followForms ? lookupEnglish(lemma, false) : null
       const example = sense.parsedExamples
         ?.map((e) => e.example)
         .find((e) => !e.includes('color-panel'))
@@ -159,7 +166,7 @@ export async function defineMissing(userId: string, bookIds?: string[]) {
           ...(!row.translation &&
             entry.translation && {
               translation: entry.translation,
-              translationBy: 'auto' as const,
+              translationBy: 'dictionary' as const,
             }),
         })
         .where(and(eq(vocabEntry.id, row.id), missingDefinition))

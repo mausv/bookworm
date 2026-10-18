@@ -7,7 +7,6 @@ services:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set BETTER_AUTH_URL}
       INVITE_CODE: ${INVITE_CODE:-}
-      DEEPL_API_KEY: ${DEEPL_API_KEY:-}
     ports:
       - '3000:3000'
     restart: unless-stopped

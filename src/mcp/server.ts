@@ -23,7 +23,7 @@ Highlight types follow the user's color convention:
 - lore (blue/aqua): book lore — world, characters, places, factions, events. Lore entries are a per-book wiki linked to the highlights they come from.
 - unclassified: no color info (e.g. Kindle My Clippings.txt) or an unmapped color; the user triages these.
 Notes on highlights are the user's own words (for vocab they are often the user's own definition).
-Definitions marked "dictionary" come from Wiktionary's first sense and may not fit the context. Quotes can carry an explanation (add_explanation); get_book reports how many words lack a definition and quotes lack an explanation.
+Definitions marked "dictionary" come from Wiktionary's first sense and may not fit the context. Quotes can carry an explanation (add_explanations); get_book reports how many words lack a definition and quotes lack an explanation.
 The user reads in English and Spanish. Vocab entries carry a translation into the other language (set_translations); definitions stay in the book's language.
 List tools return { items, nextCursor }; pass nextCursor back as cursor to get the next page. Ids come from list results.`
 
@@ -167,7 +167,7 @@ export function createMcpServer(userId: string) {
     'get_vocab',
     {
       description:
-        'Vocabulary entries (yellow highlights), optionally scoped to a book or chapter, by learning status, or only those still missing a definition or a translation. Each entry has a translation into the other of English/Spanish (English books → Spanish, Spanish books → English); translationBy "auto" means a machine draft worth checking against the context.',
+        'Vocabulary entries (yellow highlights), optionally scoped to a book or chapter, by learning status, or only those still missing a definition or a translation. Each entry has a translation into the other of English/Spanish (English books → Spanish, Spanish books → English); translationBy "dictionary" means it came from Wiktionary.',
       inputSchema: {
         book_id: bookId.optional(),
         chapter_id: chapterId.optional(),
@@ -258,42 +258,62 @@ export function createMcpServer(userId: string) {
   )
 
   server.registerTool(
-    'add_definition',
+    'add_definitions',
     {
       description:
-        'Write a definition for a vocab entry (marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep it short, dictionary-style, for the sense used in the highlight context. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Optionally trim the term down to the word itself. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context.',
+        'Write definitions for many vocab entries at once (up to 100 per call; marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep each short and dictionary-style, for the sense used in the highlight context. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Optionally trim a term down to the word itself and add the translation into the other of English/Spanish. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context. Work through get_vocab with missing_definition: true page by page.',
       inputSchema: {
-        vocab_id: id.describe('Vocab entry id from get_vocab'),
-        definition: z.string().trim().min(1).max(2000),
-        part_of_speech: z.string().trim().max(50).optional(),
-        example: z.string().trim().max(2000).optional().describe('A short example sentence'),
-        term: z
-          .string()
-          .trim()
+        entries: z
+          .array(
+            z.object({
+              vocab_id: id.describe('Vocab entry id from get_vocab'),
+              definition: z.string().trim().min(1).max(2000),
+              part_of_speech: z.string().trim().max(50).optional(),
+              example: z.string().trim().max(2000).optional().describe('A short example sentence'),
+              term: z
+                .string()
+                .trim()
+                .min(1)
+                .max(200)
+                .optional()
+                .describe('Corrected term, if the highlight included extra words'),
+              translation: z
+                .string()
+                .trim()
+                .min(1)
+                .max(500)
+                .optional()
+                .describe(
+                  'Translation into the other of English/Spanish, for the sense in context'
+                ),
+            })
+          )
           .min(1)
-          .max(200)
-          .optional()
-          .describe('Corrected term, if the highlight included extra words'),
-        translation: z
-          .string()
-          .trim()
-          .min(1)
-          .max(500)
-          .optional()
-          .describe('Translation into the other of English/Spanish, for the sense in context'),
+          .max(100),
       },
       annotations: write,
     },
-    ({ vocab_id, definition, part_of_speech, example, term, translation }) => {
-      const result = updateVocab(userId, vocab_id, {
-        definition,
-        definitionBy: 'claude',
-        ...(part_of_speech !== undefined && { partOfSpeech: part_of_speech }),
-        ...(example !== undefined && { example }),
-        ...(term !== undefined && { term }),
-        ...(translation !== undefined && { translation, translationBy: 'claude' as const }),
+    ({ entries }) => {
+      const results = entries.map((e) =>
+        updateVocab(userId, e.vocab_id, {
+          definition: e.definition,
+          definitionBy: 'claude',
+          ...(e.part_of_speech !== undefined && { partOfSpeech: e.part_of_speech }),
+          ...(e.example !== undefined && { example: e.example }),
+          ...(e.term !== undefined && { term: e.term }),
+          ...(e.translation !== undefined && {
+            translation: e.translation,
+            translationBy: 'claude' as const,
+          }),
+        })
+      )
+      return reply({
+        updated: results.filter((r) => 'vocab' in r).length,
+        failed: entries.flatMap((e, i) => {
+          const r = results[i]
+          return 'error' in r && r.error ? [{ vocab_id: e.vocab_id, error: r.error }] : []
+        }),
       })
-      return reply(result.vocab ? { vocab: compact(result.vocab) } : result)
     }
   )
 
@@ -301,7 +321,7 @@ export function createMcpServer(userId: string) {
     'set_translations',
     {
       description:
-        'Set translations for several vocab entries at once (marked as added by Claude). Translate English words into Spanish and Spanish words into English, choosing the sense used in the highlight context; replace machine drafts (translationBy "auto") when they miss that sense.',
+        'Set translations for several vocab entries at once (marked as added by Claude). Translate English words into Spanish and Spanish words into English, choosing the sense used in the highlight context; replace dictionary translations when they miss that sense.',
       inputSchema: {
         translations: z
           .array(z.object({ vocab_id: id, translation: z.string().trim().min(1).max(500) }))
@@ -376,17 +396,29 @@ export function createMcpServer(userId: string) {
   )
 
   server.registerTool(
-    'add_explanation',
+    'add_explanations',
     {
       description:
-        "Explain what a highlight means in the book's context — mainly quotes (orange): one to three plain sentences on the meaning, any idiom or reference, and why it matters there. Write in the book's language. Replaces an existing explanation; doesn't touch the user's note.",
-      inputSchema: { highlight_id: id, explanation: z.string().trim().min(1).max(5000) },
+        "Explain what highlights mean in the book's context, many at once (up to 100 per call) — mainly quotes (orange): one to three plain sentences each on the meaning, any idiom or reference, and why it matters there. Write in the book's language. Replaces existing explanations; doesn't touch the user's notes. Find quotes to explain with search_highlights (type quote, missing_explanation true).",
+      inputSchema: {
+        entries: z
+          .array(z.object({ highlight_id: id, explanation: z.string().trim().min(1).max(5000) }))
+          .min(1)
+          .max(100),
+      },
       annotations: write,
     },
-    ({ highlight_id, explanation }) => {
-      const result = updateHighlight(userId, highlight_id, { explanation, explanationBy: 'claude' })
-      if (!('highlight' in result) || !result.highlight) return reply(result)
-      return reply({ highlight: highlightItem(result.highlight, true) })
+    ({ entries }) => {
+      const results = entries.map((e) =>
+        updateHighlight(userId, e.highlight_id, {
+          explanation: e.explanation,
+          explanationBy: 'claude',
+        })
+      )
+      return reply({
+        updated: results.filter((r) => 'highlight' in r).length,
+        notFound: entries.filter((_, i) => 'error' in results[i]).map((e) => e.highlight_id),
+      })
     }
   )
 

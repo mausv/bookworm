@@ -14,6 +14,7 @@ export interface HighlightFilter {
   chapterId?: string
   q?: string
   tag?: string
+  missingExplanation?: 'true'
 }
 
 export function HighlightList({ filter, grouped }: { filter: HighlightFilter; grouped: boolean }) {
