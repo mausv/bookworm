@@ -83,7 +83,12 @@ export function listHighlights(userId: string, filter: HighlightFilter = {}) {
     )
   }
   const order = filter.bookId
-    ? [sql`${chapter.position} is null`, asc(chapter.position), asc(highlight.locStart)]
+    ? [
+        sql`${chapter.position} is null`,
+        asc(chapter.position),
+        asc(highlight.locStart),
+        asc(highlight.highlightedAt),
+      ]
     : [desc(highlight.createdAt)]
 
   const result = page(filter, (limit, offset) =>

@@ -1,0 +1,79 @@
+{
+  "$format": "readest-annotations",
+  "version": 1,
+  "exportedAt": 1792310400000,
+  "book": {
+    "title": "The Way of Kings",
+    "author": "Brandon Sanderson",
+    "hash": "6d1c4a9b",
+    "format": "EPUB"
+  },
+  "progress": [312, 1258],
+  "location": "epubcfi(/6/24!/4/2/10/1:0)",
+  "annotations": [
+    {
+      "id": "a1",
+      "type": "annotation",
+      "cfi": "epubcfi(/6/12!/4/2/6,/1:10,/1:19)",
+      "text": "spren",
+      "style": "highlight",
+      "color": "yellow",
+      "note": "",
+      "createdAt": 1792224000000,
+      "updatedAt": 1792224000000
+    },
+    {
+      "id": "a2",
+      "type": "annotation",
+      "cfi": "epubcfi(/6/12!/4/2/14,/1:0,/1:58)",
+      "text": "Life before death. Strength before weakness. Journey before destination.",
+      "style": "highlight",
+      "color": "red",
+      "note": "The First Ideal",
+      "createdAt": 1792224100000,
+      "updatedAt": 1792224200000
+    },
+    {
+      "id": "a3",
+      "type": "annotation",
+      "cfi": "epubcfi(/6/14!/4/2/2,/1:0,/1:7)",
+      "text": "Roshar",
+      "style": "underline",
+      "color": "blue",
+      "note": "",
+      "createdAt": 1792224300000,
+      "updatedAt": 1792224300000
+    },
+    {
+      "id": "a4",
+      "type": "annotation",
+      "cfi": "epubcfi(/6/16!/4/2/8,/1:4,/1:20)",
+      "text": "highstorm",
+      "style": "highlight",
+      "color": "#FF8800",
+      "note": "",
+      "createdAt": 1792224400000,
+      "updatedAt": 1792224400000
+    },
+    {
+      "id": "a5",
+      "type": "annotation",
+      "cfi": "epubcfi(/6/16!/4/2/12,/1:0,/1:9)",
+      "text": "chasmfiend",
+      "style": "squiggly",
+      "color": "violet",
+      "note": "",
+      "createdAt": 1792224500000,
+      "updatedAt": 1792224500000
+    },
+    {
+      "id": "b1",
+      "type": "bookmark",
+      "cfi": "epubcfi(/6/18!/4/2/2/1:0)",
+      "text": "Chapter Three",
+      "note": "",
+      "createdAt": 1792224600000,
+      "updatedAt": 1792224600000
+    }
+  ]
+}

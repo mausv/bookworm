@@ -3,13 +3,14 @@ import { db } from '@/db'
 import { book, chapter, highlight } from '@/db/schema'
 import { clippings } from '@/importers/clippings'
 import { kindleHtml } from '@/importers/kindle-html'
+import { readest } from '@/importers/readest'
 import { normalizeText } from '@/importers/text'
 import type { Importer, ParsedBook, ParsedHighlight } from '@/importers/types'
 import type { Source } from '@/shared/types'
 import { type ColorMap, getColorMap, typeForColor } from './colors'
 import { ensureVocab } from './vocab'
 
-export const importers: Importer[] = [kindleHtml, clippings]
+export const importers: Importer[] = [kindleHtml, clippings, readest]
 
 export interface BookImportResult {
   bookId: string

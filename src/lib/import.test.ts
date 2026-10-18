@@ -123,3 +123,18 @@ describe('importContent', () => {
     expect(importContent(userId, 'just some text')).toEqual({ error: 'Unrecognized file format' })
   })
 })
+
+describe('Readest import', () => {
+  it('maps Readest colors and dedupes on the CFI', () => {
+    const json = fixture('readest-annotations.json')
+    expect(importContent(userId, json)).toMatchObject({
+      source: 'readest',
+      books: [{ title: 'The Way of Kings', added: 5 }],
+    })
+    expect(highlightByText('spren')?.type).toBe('vocab')
+    expect(highlightByText('Roshar')?.type).toBe('lore')
+    expect(highlightByText('highstorm')).toMatchObject({ type: 'quote', color: '#ff8800' })
+    expect(highlightByText('chasmfiend')?.type).toBe('unclassified')
+    expect(importContent(userId, json)).toMatchObject({ books: [{ added: 0, unchanged: 5 }] })
+  })
+})
