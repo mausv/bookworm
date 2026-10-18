@@ -10,6 +10,7 @@ import type { HighlightType, Source } from '@/shared/types'
 import { ownsBook } from './access'
 import { type ColorMap, getColorMap, typeForColor } from './colors'
 import { getHighlight } from './highlights'
+import { translateInBackground } from './translate'
 import { ensureVocab } from './vocab'
 
 export const importers: Importer[] = [kindleHtml, clippings, readest]
@@ -138,12 +139,17 @@ export function importContent(userId: string, content: string, source?: Source) 
   const parsed = importer.parse(content)
   if (!parsed.some((b) => b.highlights.length)) return { error: 'No highlights found in the file' }
   const colors = getColorMap(userId, importer.source)
-  return db.transaction(() => ({
+  const result = db.transaction(() => ({
     source: importer.source,
     books: parsed
       .filter((b) => b.highlights.length)
       .map((b) => importBook(userId, b, importer.source, colors)),
   }))
+  translateInBackground(
+    userId,
+    result.books.map((b) => b.bookId)
+  )
+  return result
 }
 
 export interface ManualHighlight {
@@ -159,7 +165,7 @@ export interface ManualHighlight {
 export function addHighlight(userId: string, input: ManualHighlight) {
   if (input.bookId && !ownsBook(userId, input.bookId)) return { error: 'Book not found' }
   if (!input.bookId && !input.book) return { error: 'A book is required' }
-  return db.transaction(() => {
+  const result = db.transaction(() => {
     const bookId =
       input.bookId ??
       upsertBook(
@@ -194,4 +200,8 @@ export function addHighlight(userId: string, input: ManualHighlight) {
     if (!existing && input.type === 'vocab') ensureVocab(id)
     return { highlight: getHighlight(userId, id), created: !existing }
   })
+  if (result.created && input.type === 'vocab' && result.highlight) {
+    translateInBackground(userId, [result.highlight.bookId])
+  }
+  return result
 }

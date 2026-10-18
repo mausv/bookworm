@@ -153,3 +153,21 @@ describe('other users', () => {
     ).toEqual({ error: 'Vocab entry not found' })
   })
 })
+
+describe('translations as answers', () => {
+  it("accepts the word's translation when asked for its meaning", () => {
+    const word = addWord(other.id, 'tolvanera', 'remolino de polvo')
+    updateVocab(userId, word, { translation: 'dust devil' })
+    expect(
+      answerQuiz(userId, {
+        vocabId: word,
+        mode: 'typed',
+        direction: 'definition',
+        answer: 'Dust devil',
+      })
+    ).toMatchObject({ correct: true, close: false })
+    expect(
+      answerQuiz(userId, { vocabId: word, mode: 'typed', direction: 'term', answer: 'dust devil' })
+    ).toMatchObject({ correct: false })
+  })
+})

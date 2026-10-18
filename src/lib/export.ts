@@ -91,7 +91,8 @@ export function bookMarkdown(userId: string, bookId: string) {
       lines.push(`### ${title}`, '')
       for (const v of entries) {
         const pos = v.partOfSpeech ? ` *(${v.partOfSpeech})*` : ''
-        lines.push(`- **${v.term}**${pos}${v.definition ? ` — ${v.definition}` : ''}`)
+        const translation = v.translation ? ` (${v.translation})` : ''
+        lines.push(`- **${v.term}**${pos}${translation}${v.definition ? ` — ${v.definition}` : ''}`)
         if (v.context.trim() !== v.term) lines.push(`  - ${v.context.replace(/\n/g, ' ')}`)
         if (v.example) lines.push(`  - e.g. ${v.example}`)
       }
@@ -162,7 +163,11 @@ function ankiTag(value: string) {
 export function vocabTsv(userId: string, scope: { bookId?: string; chapterId?: string } = {}) {
   const vocab = all((cursor) => listVocab(userId, { ...scope, cursor, limit: 500 }))
   const rows = vocab.map((v) => {
-    const back = [v.partOfSpeech && `<i>${v.partOfSpeech}</i>`, v.definition]
+    const back = [
+      v.partOfSpeech && `<i>${v.partOfSpeech}</i>`,
+      v.translation && `<b>${v.translation}</b>`,
+      v.definition,
+    ]
       .filter(Boolean)
       .join(' ')
     const context = v.context.trim() === v.term ? (v.example ?? '') : v.context

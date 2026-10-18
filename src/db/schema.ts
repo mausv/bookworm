@@ -8,7 +8,13 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
-import { HIGHLIGHT_TYPES, LORE_KINDS, SOURCES, VOCAB_STATUSES } from '@/shared/types'
+import {
+  HIGHLIGHT_TYPES,
+  LORE_KINDS,
+  SOURCES,
+  TRANSLATION_SOURCES,
+  VOCAB_STATUSES,
+} from '@/shared/types'
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`
 
@@ -387,6 +393,8 @@ export const vocabEntry = sqliteTable(
     example: text('example'),
     status: text('status', { enum: VOCAB_STATUSES }).default('new').notNull(),
     definitionBy: text('definition_by', { enum: ['me', 'claude'] }),
+    translation: text('translation'),
+    translationBy: text('translation_by', { enum: TRANSLATION_SOURCES }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

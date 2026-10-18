@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { HIGHLIGHT_TYPES, LORE_KINDS, SOURCES, VOCAB_STATUSES } from '@/shared/types'
+import {
+  HIGHLIGHT_TYPES,
+  LORE_KINDS,
+  SOURCES,
+  TRANSLATION_SOURCES,
+  VOCAB_STATUSES,
+} from '@/shared/types'
 
 export const id = z.string().min(1)
 export const highlightType = z.enum(HIGHLIGHT_TYPES)
@@ -62,6 +68,8 @@ export const vocabUpdateSchema = z
     example: optionalText,
     status: vocabStatus,
     definitionBy: z.enum(['me', 'claude']).nullable(),
+    translation: z.string().trim().max(500).nullable(),
+    translationBy: z.enum(TRANSLATION_SOURCES).nullable(),
   })
   .partial()
 
@@ -97,3 +105,5 @@ export const quizAnswerSchema = z.object({
 })
 
 export const apiKeySchema = z.object({ name: z.string().trim().min(1).max(100) })
+
+export const translateSchema = z.object({ bookId: id.optional() })

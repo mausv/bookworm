@@ -20,6 +20,7 @@ import { addHighlight, importContent } from '@/lib/import'
 import { deleteLore, listLore, unlinkLoreHighlight, updateLore, upsertLore } from '@/lib/lore'
 import { listConnectedClients, revokeConnectedClient } from '@/lib/oauth'
 import { answerQuiz, buildQuiz } from '@/lib/quiz'
+import { autoTranslateEnabled, translateMissing } from '@/lib/translate'
 import {
   addTagsSchema,
   apiKeySchema,
@@ -35,6 +36,7 @@ import {
   quizAnswerSchema,
   quizMode,
   source,
+  translateSchema,
   vocabStatus,
   vocabUpdateSchema,
 } from '@/lib/validation'
@@ -86,6 +88,7 @@ function pageParams(c: Context) {
 export const api = new Hono<Env>()
   .use(requireUser)
 
+  .get('/features', (c) => c.json({ autoTranslate: autoTranslateEnabled() }))
   .get('/books', (c) => c.json({ books: listBooks(c.get('userId')) }))
   .get('/books/:id', (c) => {
     const book = getBook(c.get('userId'), c.req.param('id'))
@@ -149,10 +152,23 @@ export const api = new Hono<Env>()
         chapterId: c.req.query('chapterId'),
         status: query(vocabStatus, c.req.query('status')),
         missingDefinition: c.req.query('missingDefinition') === 'true',
+        missingTranslation: c.req.query('missingTranslation') === 'true',
         ...pageParams(c),
       })
     )
   )
+  .post('/vocab/translate', async (c) => {
+    const parsed = await parseJson(c, translateSchema)
+    if (!parsed.success) return invalid(c, parsed.error)
+    if (!autoTranslateEnabled()) return c.json({ error: 'Auto-translation is not configured' }, 503)
+    const { bookId } = parsed.data
+    if (bookId && !getBook(c.get('userId'), bookId)) return c.json({ error: 'Book not found' }, 404)
+    try {
+      return c.json(await translateMissing(c.get('userId'), bookId ? [bookId] : undefined))
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : 'Translation failed' }, 502)
+    }
+  })
   .get('/vocab/:id', (c) => {
     const vocab = getVocab(c.get('userId'), c.req.param('id'))
     return vocab ? c.json({ vocab }) : c.json({ error: 'Vocab entry not found' }, 404)

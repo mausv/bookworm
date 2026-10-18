@@ -114,9 +114,19 @@ export function buildQuiz(
   })
 }
 
-function isCorrect(answer: string, expected: string, mode: QuizMode, direction: QuizDirection) {
+function isCorrect(
+  answer: string,
+  expected: string,
+  mode: QuizMode,
+  direction: QuizDirection,
+  translation: string | null
+) {
   const given = normalizeAnswer(answer)
-  const candidates = [expected, ...(direction === 'definition' ? expected.split(/[,;/]/) : [])]
+  const meanings = [expected, ...(translation ? [translation] : [])]
+  const candidates = [
+    expected,
+    ...(direction === 'definition' ? meanings.flatMap((m) => [m, ...m.split(/[,;/]/)]) : []),
+  ]
     .map(normalizeAnswer)
     .filter(Boolean)
   if (candidates.includes(given)) return { correct: true, close: false }
@@ -154,7 +164,7 @@ export function answerQuiz(userId: string, { vocabId, mode, direction, answer }:
     : undefined
   if (!entry) return { error: 'Vocab entry not found' }
   const expected = direction === 'term' ? entry.term : (entry.definition ?? '')
-  const { correct, close } = isCorrect(answer, expected, mode, direction)
+  const { correct, close } = isCorrect(answer, expected, mode, direction, entry.translation)
   return db.transaction(() => {
     const status = nextStatus(vocabId, entry.status, correct)
     db.insert(quizAttempt).values({ vocabId, mode, correct }).run()

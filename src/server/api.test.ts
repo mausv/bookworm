@@ -255,3 +255,19 @@ describe('POST /api/highlights', () => {
     expect(both.status).toBe(400)
   })
 })
+
+describe('translation endpoints', () => {
+  it('reports auto-translate as off without a DeepL key', async () => {
+    expect(await (await call('/api/features')).json()).toEqual({ autoTranslate: false })
+    expect((await json('POST', '/api/vocab/translate', {})).status).toBe(503)
+  })
+
+  it('saves a hand-written translation', async () => {
+    const { items } = await (await call('/api/vocab?missingTranslation=true&limit=1')).json()
+    const res = await json('PATCH', `/api/vocab/${items[0].id}`, {
+      translation: 'tópicos',
+      translationBy: 'me',
+    })
+    expect((await res.json()).vocab).toMatchObject({ translation: 'tópicos', translationBy: 'me' })
+  })
+})

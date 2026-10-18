@@ -52,6 +52,7 @@ export interface VocabFilter extends PageInput {
   chapterId?: string
   status?: VocabStatus
   missingDefinition?: boolean
+  missingTranslation?: boolean
 }
 
 const firstOccurrence = sql`(
@@ -69,6 +70,8 @@ export const vocabColumns = {
   example: vocabEntry.example,
   status: vocabEntry.status,
   definitionBy: vocabEntry.definitionBy,
+  translation: vocabEntry.translation,
+  translationBy: vocabEntry.translationBy,
   occurrences: sql<number>`(
     select count(*) from highlight h3 where h3.vocab_id = ${vocabEntry.id} and h3.type = 'vocab'
   )`,
@@ -95,6 +98,9 @@ export function vocabConditions(userId: string, filter: VocabFilter) {
   if (filter.status) conditions.push(eq(vocabEntry.status, filter.status))
   if (filter.missingDefinition) {
     conditions.push(sql`(${vocabEntry.definition} is null or ${vocabEntry.definition} = '')`)
+  }
+  if (filter.missingTranslation) {
+    conditions.push(sql`(${vocabEntry.translation} is null or ${vocabEntry.translation} = '')`)
   }
   return and(...conditions)
 }
@@ -149,7 +155,15 @@ export function getVocab(userId: string, id: string) {
 export type VocabUpdate = Partial<
   Pick<
     typeof vocabEntry.$inferInsert,
-    'term' | 'definition' | 'partOfSpeech' | 'language' | 'example' | 'status' | 'definitionBy'
+    | 'term'
+    | 'definition'
+    | 'partOfSpeech'
+    | 'language'
+    | 'example'
+    | 'status'
+    | 'definitionBy'
+    | 'translation'
+    | 'translationBy'
   >
 >
 

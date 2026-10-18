@@ -17,6 +17,7 @@ Highlight types follow the user's color convention:
 - lore (blue/aqua): book lore — world, characters, places, factions, events. Lore entries are a per-book wiki linked to the highlights they come from.
 - unclassified: no color info (e.g. Kindle My Clippings.txt) or an unmapped color; the user triages these.
 Notes on highlights are the user's own words (for vocab they are often the user's own definition).
+The user reads in English and Spanish. Vocab entries carry a translation into the other language (set_translations); definitions stay in the book's language.
 List tools return { items, nextCursor }; pass nextCursor back as cursor to get the next page. Ids come from list results.`
 
 function compact<T extends Record<string, unknown>>(value: T) {
@@ -151,22 +152,24 @@ export function createMcpServer(userId: string) {
     'get_vocab',
     {
       description:
-        'Vocabulary entries (yellow highlights), optionally scoped to a book or chapter, by learning status, or only those still missing a definition.',
+        'Vocabulary entries (yellow highlights), optionally scoped to a book or chapter, by learning status, or only those still missing a definition or a translation. Each entry has a translation into the other of English/Spanish (English books → Spanish, Spanish books → English); translationBy "auto" means a machine draft worth checking against the context.',
       inputSchema: {
         book_id: bookId.optional(),
         chapter_id: chapterId.optional(),
         status: vocabStatus.optional(),
         missing_definition: z.boolean().optional().describe('Only entries without a definition'),
+        missing_translation: z.boolean().optional().describe('Only entries without a translation'),
         ...pageInput,
       },
       annotations: read,
     },
-    ({ book_id, chapter_id, status, missing_definition, limit, cursor }) => {
+    ({ book_id, chapter_id, status, missing_definition, missing_translation, limit, cursor }) => {
       const result = listVocab(userId, {
         bookId: book_id,
         chapterId: chapter_id,
         status,
         missingDefinition: missing_definition,
+        missingTranslation: missing_translation,
         limit,
         cursor,
       })
@@ -181,6 +184,8 @@ export function createMcpServer(userId: string) {
             language: v.language,
             status: v.status,
             definitionBy: v.definitionBy,
+            translation: v.translation,
+            translationBy: v.translationBy,
             context: v.context.trim() === v.term ? undefined : v.context,
             seen: v.occurrences > 1 ? v.occurrences : undefined,
             note: v.note === v.definition ? undefined : v.note,
@@ -254,18 +259,50 @@ export function createMcpServer(userId: string) {
           .max(200)
           .optional()
           .describe('Corrected term, if the highlight included extra words'),
+        translation: z
+          .string()
+          .trim()
+          .min(1)
+          .max(500)
+          .optional()
+          .describe('Translation into the other of English/Spanish, for the sense in context'),
       },
       annotations: write,
     },
-    ({ vocab_id, definition, part_of_speech, example, term }) => {
+    ({ vocab_id, definition, part_of_speech, example, term, translation }) => {
       const result = updateVocab(userId, vocab_id, {
         definition,
         definitionBy: 'claude',
         ...(part_of_speech !== undefined && { partOfSpeech: part_of_speech }),
         ...(example !== undefined && { example }),
         ...(term !== undefined && { term }),
+        ...(translation !== undefined && { translation, translationBy: 'claude' as const }),
       })
       return reply(result.vocab ? { vocab: compact(result.vocab) } : result)
+    }
+  )
+
+  server.registerTool(
+    'set_translations',
+    {
+      description:
+        'Set translations for several vocab entries at once (marked as added by Claude). Translate English words into Spanish and Spanish words into English, choosing the sense used in the highlight context; replace machine drafts (translationBy "auto") when they miss that sense.',
+      inputSchema: {
+        translations: z
+          .array(z.object({ vocab_id: id, translation: z.string().trim().min(1).max(500) }))
+          .min(1)
+          .max(100),
+      },
+      annotations: write,
+    },
+    ({ translations }) => {
+      const results = translations.map((t) =>
+        updateVocab(userId, t.vocab_id, { translation: t.translation, translationBy: 'claude' })
+      )
+      return reply({
+        updated: results.filter((r) => 'vocab' in r).length,
+        notFound: translations.filter((_, i) => 'error' in results[i]).map((t) => t.vocab_id),
+      })
     }
   )
 

@@ -280,3 +280,44 @@ describe('add_highlight', () => {
     expect(result.isError).toBe(true)
   })
 })
+
+describe('translations', () => {
+  it('lists entries missing a translation and sets several at once', async () => {
+    const missing = await callTool(
+      'get_vocab',
+      { book_id: bookId, missing_translation: true, limit: 2 },
+      vocabList
+    )
+    expect(missing.items).toHaveLength(2)
+    const result = await callTool(
+      'set_translations',
+      {
+        translations: [
+          { vocab_id: missing.items[0].id, translation: 'tópicos' },
+          { vocab_id: 'nope', translation: 'x' },
+        ],
+      },
+      z.object({ updated: z.number(), notFound: z.array(z.string()) })
+    )
+    expect(result).toEqual({ updated: 1, notFound: ['nope'] })
+    const { items } = await callTool('get_vocab', { book_id: bookId, limit: 200 }, vocabList)
+    expect(items.find((v) => v.id === missing.items[0].id)).toMatchObject({
+      translation: 'tópicos',
+      translationBy: 'claude',
+    })
+  })
+
+  it('takes a translation with a definition', async () => {
+    const { items } = await callTool(
+      'get_vocab',
+      { book_id: bookId, missing_translation: true, limit: 1 },
+      vocabList
+    )
+    const { vocab } = await callTool(
+      'add_definition',
+      { vocab_id: items[0].id, definition: 'to look', translation: 'mirar' },
+      z.object({ vocab: z.looseObject({ translation: z.string(), translationBy: z.string() }) })
+    )
+    expect(vocab).toMatchObject({ translation: 'mirar', translationBy: 'claude' })
+  })
+})
