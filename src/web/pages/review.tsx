@@ -4,6 +4,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Flashcards } from '@/web/components/flashcards'
 import { Quiz } from '@/web/components/quiz'
 import { api } from '@/web/lib/api'
+import { useT } from '@/web/lib/i18n'
 import type { Book, BookDetail } from '@/web/lib/types'
 import { cn } from '@/web/lib/utils'
 
@@ -13,11 +14,12 @@ export interface Scope {
 }
 
 const MODES = [
-  { value: 'cards', label: 'Flashcards' },
-  { value: 'quiz', label: 'Quiz' },
+  { value: 'cards', label: 'review.cards' },
+  { value: 'quiz', label: 'review.quiz' },
 ] as const
 
 export function ReviewPage() {
+  const t = useT()
   const [params, setParams] = useSearchParams()
   const bookId = params.get('bookId') ?? undefined
   const chapterId = params.get('chapterId') ?? undefined
@@ -50,8 +52,12 @@ export function ReviewPage() {
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-3xl sm:text-4xl">Review</h1>
-        <div role="radiogroup" aria-label="Mode" className="flex gap-1 rounded-full bg-muted p-1">
+        <h1 className="text-3xl sm:text-4xl">{t('nav.review')}</h1>
+        <div
+          role="radiogroup"
+          aria-label={t('review.mode')}
+          className="flex gap-1 rounded-full bg-muted p-1"
+        >
           {MODES.map((m) => (
             <button
               key={m.value}
@@ -66,7 +72,7 @@ export function ReviewPage() {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {m.label}
+              {t(m.label)}
             </button>
           ))}
         </div>
@@ -74,12 +80,12 @@ export function ReviewPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <NativeSelect
-          aria-label="Book"
+          aria-label={t('common.book')}
           className="w-full sm:flex-1"
           value={bookId ?? ''}
           onChange={(e) => update({ bookId: e.target.value || undefined, chapterId: undefined })}
         >
-          <option value="">All books</option>
+          <option value="">{t('common.allBooks')}</option>
           {withVocab.map((b) => (
             <option key={b.id} value={b.id}>
               {b.title}
@@ -88,12 +94,12 @@ export function ReviewPage() {
         </NativeSelect>
         {bookId && chapters.length > 0 && (
           <NativeSelect
-            aria-label="Chapter"
+            aria-label={t('common.chapter')}
             className="w-full sm:flex-1"
             value={chapterId ?? ''}
             onChange={(e) => update({ chapterId: e.target.value || undefined })}
           >
-            <option value="">All chapters</option>
+            <option value="">{t('review.allChapters')}</option>
             {chapters.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.title}

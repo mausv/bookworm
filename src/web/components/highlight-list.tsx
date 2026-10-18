@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import type { HighlightType } from '@/shared/types'
 import { api } from '@/web/lib/api'
 import { groupByChapter } from '@/web/lib/highlights'
+import { useT } from '@/web/lib/i18n'
 import type { Highlight, Page } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import { HighlightItem } from './highlight-item'
@@ -16,6 +17,7 @@ export interface HighlightFilter {
 }
 
 export function HighlightList({ filter, grouped }: { filter: HighlightFilter; grouped: boolean }) {
+  const t = useT()
   const query = useInfiniteQuery({
     queryKey: ['highlights', filter],
     queryFn: ({ pageParam }) =>
@@ -31,7 +33,7 @@ export function HighlightList({ filter, grouped }: { filter: HighlightFilter; gr
   if (!items.length) {
     return (
       <p className="py-10 text-center text-muted-foreground">
-        {filter.q || filter.tag ? 'Nothing matches this filter.' : 'Nothing here yet.'}
+        {filter.q || filter.tag ? t('list.noMatches') : t('list.empty')}
       </p>
     )
   }
@@ -42,7 +44,7 @@ export function HighlightList({ filter, grouped }: { filter: HighlightFilter; gr
         groupByChapter(items).map((group, i) => (
           <section key={`${group.chapterId}-${i}`} className="space-y-6">
             <h2 className="text-lg text-muted-foreground italic">
-              {group.chapter ?? 'No chapter'}
+              {group.chapter ?? t('list.noChapter')}
             </h2>
             <ItemStack items={group.items} />
           </section>
@@ -57,7 +59,7 @@ export function HighlightList({ filter, grouped }: { filter: HighlightFilter; gr
             disabled={query.isFetchingNextPage}
             onClick={() => query.fetchNextPage()}
           >
-            {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
+            {query.isFetchingNextPage ? t('common.loading') : t('list.loadMore')}
           </Button>
         </div>
       )}

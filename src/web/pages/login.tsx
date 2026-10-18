@@ -5,9 +5,11 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import { AuthShell } from '@/web/components/auth-shell'
 import { authClient } from '@/web/lib/auth-client'
+import { useT } from '@/web/lib/i18n'
 import { nextPath, signedOAuthQuery } from '@/web/lib/url'
 
 export function LoginPage() {
+  const t = useT()
   const { search } = useLocation()
   const navigate = useNavigate()
   const [error, setError] = useState<string>()
@@ -23,7 +25,7 @@ export function LoginPage() {
       fetchOptions: { body: { oauth_query: signedOAuthQuery(search) } },
     })
     setPending(false)
-    if (error) return setError(error.message ?? 'Sign in failed')
+    if (error) return setError(error.message ?? t('auth.signInFailed'))
     if (data.redirect) return
     navigate(nextPath(search), { replace: true })
   }
@@ -32,17 +34,17 @@ export function LoginPage() {
     <AuthShell>
       <div className="space-y-6">
         <div className="space-y-1">
-          <h1 className="text-2xl">Sign in</h1>
-          <p className="text-muted-foreground">Pick up where you left off.</p>
+          <h1 className="text-2xl">{t('auth.signIn')}</h1>
+          <p className="text-muted-foreground">{t('auth.signInSubtitle')}</p>
         </div>
         <form onSubmit={onSubmit}>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <FieldLabel htmlFor="email">{t('auth.email')}</FieldLabel>
               <Input id="email" name="email" type="email" autoComplete="email" required />
             </Field>
             <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <FieldLabel htmlFor="password">{t('auth.password')}</FieldLabel>
               <Input
                 id="password"
                 name="password"
@@ -53,12 +55,12 @@ export function LoginPage() {
             </Field>
             <FieldError>{error}</FieldError>
             <Button type="submit" disabled={pending}>
-              {pending ? 'Signing in…' : 'Sign in'}
+              {pending ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
             <p className="text-sm text-muted-foreground">
-              No account?{' '}
+              {t('auth.noAccount')}{' '}
               <Link to={`/signup${search}`} className="text-primary underline underline-offset-4">
-                Sign up
+                {t('auth.signUp')}
               </Link>
             </p>
           </FieldGroup>

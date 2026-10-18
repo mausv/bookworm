@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -8,17 +8,12 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { VOCAB_STATUSES, type VocabStatus } from '@/shared/types'
 import { api } from '@/web/lib/api'
-import { groupByChapter } from '@/web/lib/highlights'
+import { groupByChapter, locationLabel } from '@/web/lib/highlights'
+import { useT } from '@/web/lib/i18n'
 import { invalidateReading } from '@/web/lib/queries'
-import type { Page, Vocab } from '@/web/lib/types'
+import type { Page, Vocab, VocabDetail } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import { cn } from '@/web/lib/utils'
-
-const STATUS_LABEL: Record<VocabStatus, string> = {
-  new: 'New',
-  learning: 'Learning',
-  known: 'Known',
-}
 
 export function VocabList({
   bookId,
@@ -29,6 +24,7 @@ export function VocabList({
   chapterId?: string
   grouped: boolean
 }) {
+  const t = useT()
   const query = useInfiniteQuery({
     queryKey: ['vocab', { bookId, chapterId }],
     queryFn: ({ pageParam }) =>
@@ -41,7 +37,9 @@ export function VocabList({
   if (query.error) return <p className="text-destructive">{query.error.message}</p>
 
   const items = query.data.pages.flatMap((p) => p.items)
-  if (!items.length) return <p className="py-10 text-center text-muted-foreground">No words yet.</p>
+  if (!items.length) {
+    return <p className="py-10 text-center text-muted-foreground">{t('vocab.empty')}</p>
+  }
 
   return (
     <div className="space-y-10">
@@ -50,7 +48,7 @@ export function VocabList({
           <section key={`${group.chapterId}-${i}`} className="space-y-6">
             {grouped && (
               <h2 className="text-lg text-muted-foreground italic">
-                {group.chapter ?? 'No chapter'}
+                {group.chapter ?? t('list.noChapter')}
               </h2>
             )}
             <ol className="space-y-7">
@@ -70,7 +68,7 @@ export function VocabList({
             disabled={query.isFetchingNextPage}
             onClick={() => query.fetchNextPage()}
           >
-            {query.isFetchingNextPage ? 'Loading…' : 'Load more'}
+            {query.isFetchingNextPage ? t('common.loading') : t('list.loadMore')}
           </Button>
         </div>
       )}
@@ -79,6 +77,7 @@ export function VocabList({
 }
 
 export function StatusChip({ status }: { status: VocabStatus }) {
+  const t = useT()
   return (
     <span
       className={cn(
@@ -87,12 +86,23 @@ export function StatusChip({ status }: { status: VocabStatus }) {
         status === 'learning' && 'ring-1 ring-foreground/30'
       )}
     >
-      {STATUS_LABEL[status]}
+      {t(`status.${status}`)}
+    </span>
+  )
+}
+
+export function SeenBadge({ occurrences }: { occurrences: number }) {
+  const t = useT()
+  if (occurrences < 2) return null
+  return (
+    <span className="rounded-full px-2 py-0.5 text-xs text-muted-foreground ring-1 ring-border">
+      {t('vocab.seen', { count: occurrences })}
     </span>
   )
 }
 
 function VocabItem({ vocab }: { vocab: Vocab }) {
+  const t = useT()
   const [editing, setEditing] = useState(false)
 
   return (
@@ -109,22 +119,27 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
             <span className="font-serif text-muted-foreground italic">{vocab.partOfSpeech}</span>
           )}
           <StatusChip status={vocab.status} />
+          <SeenBadge occurrences={vocab.occurrences} />
         </span>
         {vocab.definition ? (
           <span className="block">{vocab.definition}</span>
         ) : (
-          <span className="block text-muted-foreground italic">No definition yet</span>
+          <span className="block text-muted-foreground italic">{t('vocab.noDefinition')}</span>
         )}
       </button>
       <div className="mt-1 space-y-2 text-sm text-muted-foreground">
         {vocab.definitionBy === 'claude' && (
           <p className="flex items-center gap-1">
             <Sparkles aria-hidden className="size-3.5" />
-            Defined by Claude
+            {t('vocab.definedByClaude')}
           </p>
         )}
-        {vocab.context.trim() !== vocab.term && (
-          <p className="font-serif text-base/relaxed">{vocab.context}</p>
+        {editing && vocab.occurrences > 1 ? (
+          <VocabContexts id={vocab.id} />
+        ) : (
+          vocab.context.trim() !== vocab.term && (
+            <p className="font-serif text-base/relaxed">{vocab.context}</p>
+          )
         )}
         {vocab.example && <p className="font-serif text-base/relaxed italic">{vocab.example}</p>}
         {editing && <VocabEditor vocab={vocab} onDone={() => setEditing(false)} />}
@@ -133,7 +148,35 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
   )
 }
 
+function VocabContexts({ id }: { id: string }) {
+  const t = useT()
+  const query = useQuery({
+    queryKey: ['vocab', id],
+    queryFn: () => api<{ vocab: VocabDetail }>(`/vocab/${id}`),
+  })
+
+  if (query.isPending) return null
+  if (query.error) return <p className="text-destructive">{query.error.message}</p>
+
+  return (
+    <ol className="space-y-3" aria-label={t('vocab.contexts')}>
+      {query.data.vocab.contexts.map((c) => {
+        const where = [c.chapter, locationLabel({ locStart: c.locStart, page: null }, t)]
+          .filter(Boolean)
+          .join(' · ')
+        return (
+          <li key={c.highlightId} className="space-y-0.5">
+            {where && <p className="text-xs">{where}</p>}
+            <p className="font-serif text-base/relaxed">{c.text}</p>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [term, setTerm] = useState(vocab.term)
   const [definition, setDefinition] = useState(vocab.definition ?? '')
@@ -176,7 +219,7 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
     >
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <div className="space-y-1.5">
-          <Label htmlFor={`term-${id}`}>Term</Label>
+          <Label htmlFor={`term-${id}`}>{t('vocab.term')}</Label>
           <Input
             id={`term-${id}`}
             value={term}
@@ -185,17 +228,17 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`pos-${id}`}>Part of speech</Label>
+          <Label htmlFor={`pos-${id}`}>{t('vocab.partOfSpeech')}</Label>
           <Input
             id={`pos-${id}`}
             value={partOfSpeech}
             onChange={(e) => setPartOfSpeech(e.target.value)}
-            placeholder="noun, verb…"
+            placeholder={t('vocab.partOfSpeechPlaceholder')}
           />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={`def-${id}`}>Definition</Label>
+        <Label htmlFor={`def-${id}`}>{t('vocab.definition')}</Label>
         <Textarea
           id={`def-${id}`}
           value={definition}
@@ -203,17 +246,17 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={`example-${id}`}>Example</Label>
+        <Label htmlFor={`example-${id}`}>{t('vocab.example')}</Label>
         <Textarea
           id={`example-${id}`}
           value={example}
           onChange={(e) => setExample(e.target.value)}
-          placeholder="A sentence of your own"
+          placeholder={t('vocab.examplePlaceholder')}
         />
       </div>
       <div className="space-y-1.5">
         <p id={`status-${id}`} className="text-sm font-medium">
-          Status
+          {t('vocab.status')}
         </p>
         <div
           role="radiogroup"
@@ -234,17 +277,17 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
                   : 'border-transparent bg-muted/60 text-muted-foreground hover:text-foreground'
               )}
             >
-              {STATUS_LABEL[s]}
+              {t(`status.${s}`)}
             </button>
           ))}
         </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={save.isPending || !term.trim()}>
-          {save.isPending ? 'Saving…' : 'Save'}
+          {save.isPending ? t('common.saving') : t('common.save')}
         </Button>
       </div>
     </form>

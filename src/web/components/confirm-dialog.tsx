@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useT } from '@/web/lib/i18n'
 
 export function ConfirmDialog({
   open,
@@ -25,6 +26,7 @@ export function ConfirmDialog({
   pending?: boolean
   onConfirm: () => void
 }) {
+  const t = useT()
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -34,7 +36,7 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button variant="destructive" disabled={pending} onClick={onConfirm}>
             {confirmLabel}

@@ -15,6 +15,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { importFiles } from '@/web/lib/api'
+import { useT } from '@/web/lib/i18n'
 import { invalidateReading } from '@/web/lib/queries'
 import type { ImportResult } from '@/web/lib/types'
 import { cn } from '@/web/lib/utils'
@@ -28,6 +29,7 @@ export function ImportDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [files, setFiles] = useState<File[]>([])
   const [source, setSource] = useState('')
@@ -68,11 +70,8 @@ export function ImportDialog({
     <Dialog open={open} onOpenChange={changeOpen}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl">Import highlights</DialogTitle>
-          <DialogDescription>
-            A Kindle notebook export (.html), My Clippings.txt or a Readest annotations export
-            (.json). Re-importing the same file only adds what’s new.
-          </DialogDescription>
+          <DialogTitle className="text-xl">{t('import.title')}</DialogTitle>
+          <DialogDescription>{t('import.description')}</DialogDescription>
         </DialogHeader>
 
         <label
@@ -88,8 +87,8 @@ export function ImportDialog({
           )}
         >
           <FileUp aria-hidden className="size-6 text-muted-foreground" />
-          <span className="font-medium">Choose files or drop them here</span>
-          <span className="text-sm text-muted-foreground">.html, .txt or .json</span>
+          <span className="font-medium">{t('import.choose')}</span>
+          <span className="text-sm text-muted-foreground">{t('import.extensions')}</span>
           <input
             type="file"
             multiple
@@ -110,7 +109,7 @@ export function ImportDialog({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`Remove ${file.name}`}
+                  aria-label={t('import.remove', { name: file.name })}
                   onClick={() => setFiles((current) => current.filter((_, j) => j !== i))}
                 >
                   <X />
@@ -121,17 +120,17 @@ export function ImportDialog({
         )}
 
         <div className="space-y-1.5">
-          <Label htmlFor="import-source">Format</Label>
+          <Label htmlFor="import-source">{t('import.format')}</Label>
           <NativeSelect
             id="import-source"
             className="w-full"
             value={source}
             onChange={(e) => setSource(e.target.value)}
           >
-            <option value="">Detect automatically</option>
-            <option value="kindle-html">Kindle notebook (HTML)</option>
-            <option value="clippings">My Clippings.txt</option>
-            <option value="readest">Readest (JSON)</option>
+            <option value="">{t('import.detect')}</option>
+            <option value="kindle-html">{t('import.kindleHtml')}</option>
+            <option value="clippings">{t('source.clippings')}</option>
+            <option value="readest">{t('import.readest')}</option>
           </NativeSelect>
         </div>
 
@@ -139,10 +138,10 @@ export function ImportDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => changeOpen(false)}>
-            {results ? 'Done' : 'Cancel'}
+            {results ? t('common.done') : t('common.cancel')}
           </Button>
           <Button disabled={!files.length || upload.isPending} onClick={() => upload.mutate()}>
-            {upload.isPending ? 'Importing…' : 'Import'}
+            {upload.isPending ? t('import.importing') : t('import.button')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -157,6 +156,7 @@ function ImportResults({
   results: ImportResult[]
   onNavigate: () => void
 }) {
+  const t = useT()
   return (
     <ul className="space-y-3" aria-live="polite">
       {results.map((result, i) => (
@@ -176,7 +176,11 @@ function ImportResults({
                     {b.title}
                   </Link>
                   <span className="block text-muted-foreground">
-                    {b.added} added, {b.updated} updated, {b.unchanged} unchanged
+                    {t('import.summary', {
+                      added: b.added,
+                      updated: b.updated,
+                      unchanged: b.unchanged,
+                    })}
                   </span>
                 </li>
               ))}

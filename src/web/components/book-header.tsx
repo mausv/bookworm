@@ -13,12 +13,16 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect } from '@/components/ui/native-select'
 import { api } from '@/web/lib/api'
+import { asLocale, type Locale, LOCALES, type Translate, useLocale, useT } from '@/web/lib/i18n'
 import { invalidateReading } from '@/web/lib/queries'
 import type { BookDetail } from '@/web/lib/types'
 import { ConfirmDialog } from './confirm-dialog'
 
 export function BookHeader({ book }: { book: BookDetail }) {
+  const t = useT()
+  const { locale } = useLocale()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
@@ -27,7 +31,7 @@ export function BookHeader({ book }: { book: BookDetail }) {
   const remove = useMutation({
     mutationFn: () => api(`/books/${book.id}`, { method: 'DELETE' }),
     onSuccess: async () => {
-      toast.success(`Deleted ${book.title}`)
+      toast.success(t('book.deleted', { title: book.title }))
       navigate('/', { replace: true })
       await invalidateReading(queryClient)
     },
@@ -43,47 +47,47 @@ export function BookHeader({ book }: { book: BookDetail }) {
         <p className="text-lg text-muted-foreground">
           {book.author && <span className="italic">{book.author}</span>}
           {book.author && ', '}
-          <span>{languageName(book.language)}</span>
+          <span>{languageName(book.language, locale, t)}</span>
         </p>
       </div>
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Edit details"
+        aria-label={t('book.editDetails')}
         onClick={() => setEditing(true)}
       >
         <Pencil />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="ghost" size="icon" aria-label="More actions" />}
+          render={<Button variant="ghost" size="icon" aria-label={t('book.moreActions')} />}
         >
           <EllipsisVertical />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem render={<a href={`/api/export/books/${book.id}/markdown`} download />}>
             <Download />
-            Markdown for Obsidian
+            {t('book.exportMarkdown')}
           </DropdownMenuItem>
           <DropdownMenuItem
             render={<a href={`/api/export/vocab.tsv?bookId=${book.id}`} download />}
           >
             <Download />
-            Vocab for Anki
+            {t('book.exportAnki')}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={() => setConfirming(true)}>
             <Trash2 />
-            Delete book
+            {t('book.delete')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Delete ${book.title}?`}
-        description="All of its highlights, vocabulary and lore are removed."
-        confirmLabel="Delete book"
+        title={t('book.deleteTitle', { title: book.title })}
+        description={t('book.deleteDescription')}
+        confirmLabel={t('book.delete')}
         pending={remove.isPending}
         onConfirm={() => remove.mutate()}
       />
@@ -91,15 +95,47 @@ export function BookHeader({ book }: { book: BookDetail }) {
   )
 }
 
-function languageName(code: string) {
+export function languageName(code: string, locale: Locale, t: Translate) {
+  const known = asLocale(code)
+  if (known) return t(`language.${known}`)
   try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) ?? code
+    return new Intl.DisplayNames([locale], { type: 'language' }).of(code) ?? code
   } catch {
     return code
   }
 }
 
+export function LanguageSelect({
+  id,
+  value,
+  onChange,
+}: {
+  id: string
+  value: string
+  onChange: (language: string) => void
+}) {
+  const t = useT()
+  const { locale } = useLocale()
+  const codes: string[] = [...LOCALES]
+  if (!codes.includes(value)) codes.push(value)
+  return (
+    <NativeSelect
+      id={id}
+      className="w-full"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      {codes.map((code) => (
+        <option key={code} value={code}>
+          {languageName(code, locale, t)}
+        </option>
+      ))}
+    </NativeSelect>
+  )
+}
+
 function BookDetailsForm({ book, onDone }: { book: BookDetail; onDone: () => void }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [title, setTitle] = useState(book.title)
   const [author, setAuthor] = useState(book.author ?? '')
@@ -109,7 +145,7 @@ function BookDetailsForm({ book, onDone }: { book: BookDetail; onDone: () => voi
     mutationFn: () =>
       api(`/books/${book.id}`, {
         method: 'PATCH',
-        json: { title: title.trim(), author: author.trim() || null, language: language.trim() },
+        json: { title: title.trim(), author: author.trim() || null, language },
       }),
     onSuccess: async () => {
       await invalidateReading(queryClient)
@@ -126,7 +162,7 @@ function BookDetailsForm({ book, onDone }: { book: BookDetail; onDone: () => voi
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="book-title">Title</Label>
+        <Label htmlFor="book-title">{t('book.title')}</Label>
         <Input
           id="book-title"
           className="font-heading text-xl"
@@ -137,26 +173,20 @@ function BookDetailsForm({ book, onDone }: { book: BookDetail; onDone: () => voi
       </div>
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <div className="space-y-1.5">
-          <Label htmlFor="book-author">Author</Label>
+          <Label htmlFor="book-author">{t('book.author')}</Label>
           <Input id="book-author" value={author} onChange={(e) => setAuthor(e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="book-language">Language code</Label>
-          <Input
-            id="book-language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            placeholder="en"
-            required
-          />
+          <Label htmlFor="book-language">{t('book.language')}</Label>
+          <LanguageSelect id="book-language" value={language} onChange={setLanguage} />
         </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
-        <Button type="submit" disabled={save.isPending || !title.trim() || !language.trim()}>
-          {save.isPending ? 'Saving…' : 'Save'}
+        <Button type="submit" disabled={save.isPending || !title.trim()}>
+          {save.isPending ? t('common.saving') : t('common.save')}
         </Button>
       </div>
     </form>

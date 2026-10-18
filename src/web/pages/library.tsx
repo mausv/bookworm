@@ -1,14 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { Upload } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { AddHighlightDialog } from '@/web/components/add-highlight-dialog'
 import type { ShellContext } from '@/web/components/app-shell'
 import { TypeCounts, TypeSpine } from '@/web/components/type-counts'
 import { api } from '@/web/lib/api'
+import { useT } from '@/web/lib/i18n'
 import type { Book } from '@/web/lib/types'
 
 export function LibraryPage() {
+  const t = useT()
   const { openImport } = useOutletContext<ShellContext>()
+  const [adding, setAdding] = useState(false)
   const { data, error, isPending } = useQuery({
     queryKey: ['books'],
     queryFn: () => api<{ books: Book[] }>('/books'),
@@ -18,11 +23,26 @@ export function LibraryPage() {
   if (error) return <p className="text-destructive">{error.message}</p>
 
   const books = [...data.books].sort((a, b) => a.title.localeCompare(b.title))
-  if (!books.length) return <EmptyLibrary onImport={openImport} />
+  const dialog = <AddHighlightDialog open={adding} onOpenChange={setAdding} />
+
+  if (!books.length) {
+    return (
+      <>
+        <EmptyLibrary onImport={openImport} onAdd={() => setAdding(true)} />
+        {dialog}
+      </>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-3xl sm:text-4xl">Library</h1>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <h1 className="text-3xl sm:text-4xl">{t('library.title')}</h1>
+        <Button variant="outline" onClick={() => setAdding(true)}>
+          <Plus />
+          {t('add.button')}
+        </Button>
+      </div>
       <ul className="divide-y">
         {books.map((book) => (
           <li key={book.id}>
@@ -42,44 +62,47 @@ export function LibraryPage() {
           </li>
         ))}
       </ul>
+      {dialog}
     </div>
   )
 }
 
-function EmptyLibrary({ onImport }: { onImport: () => void }) {
+function EmptyLibrary({ onImport, onAdd }: { onImport: () => void; onAdd: () => void }) {
+  const t = useT()
   const origin = window.location.origin
   return (
     <div className="mx-auto max-w-xl space-y-8">
       <div className="space-y-3">
-        <h1 className="text-3xl sm:text-4xl">Your shelf is empty</h1>
-        <p className="text-lg text-muted-foreground">
-          Bring in your Kindle highlights and they’ll be sorted into vocabulary, quotes and lore by
-          the colors you used.
-        </p>
-        <Button size="lg" onClick={onImport}>
-          <Upload />
-          Import highlights
-        </Button>
+        <h1 className="text-3xl sm:text-4xl">{t('library.emptyTitle')}</h1>
+        <p className="text-lg text-muted-foreground">{t('library.emptyBody')}</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <Button size="lg" onClick={onImport}>
+            <Upload />
+            {t('import.title')}
+          </Button>
+          <Button size="lg" variant="ghost" onClick={onAdd}>
+            <Plus />
+            {t('library.orAddByHand')}
+          </Button>
+        </div>
       </div>
       <dl className="space-y-5">
         <div className="space-y-1">
-          <dt className="font-heading text-lg">From the Kindle app</dt>
+          <dt className="font-heading text-lg">{t('library.fromApp')}</dt>
+          <dd className="text-muted-foreground">{t('library.fromAppSteps')}</dd>
+        </div>
+        <div className="space-y-1">
+          <dt className="font-heading text-lg">{t('library.fromDevice')}</dt>
           <dd className="text-muted-foreground">
-            Open a book, tap Notebook, then Share, Export notebook and choose HTML. Import the file
-            you get.
+            {t('library.fromDeviceBefore')}{' '}
+            <code className="font-mono text-sm">My Clippings.txt</code>{' '}
+            {t('library.fromDeviceAfter')}
           </dd>
         </div>
         <div className="space-y-1">
-          <dt className="font-heading text-lg">From a Kindle device</dt>
-          <dd className="text-muted-foreground">
-            Connect it over USB and copy <code className="font-mono text-sm">My Clippings.txt</code>{' '}
-            from the documents folder. Clippings have no colors, so they land in Triage.
-          </dd>
-        </div>
-        <div className="space-y-1">
-          <dt className="font-heading text-lg">From a script</dt>
+          <dt className="font-heading text-lg">{t('library.fromScript')}</dt>
           <dd className="space-y-2 text-muted-foreground">
-            <p>Create an API key in Settings, then:</p>
+            <p>{t('library.fromScriptSteps')}</p>
             <code className="block rounded-md bg-muted p-3 font-mono text-xs break-all text-foreground">
               {`curl -H "Authorization: Bearer <key>" --data-binary @"My Clippings.txt" ${origin}/api/import`}
             </code>

@@ -5,7 +5,7 @@ import type { getHighlight } from '@/lib/highlights'
 import type { BookImportResult } from '@/lib/import'
 import type { listLore } from '@/lib/lore'
 import type { listConnectedClients } from '@/lib/oauth'
-import type { getVocab } from '@/lib/vocab'
+import type { getVocab, listVocab } from '@/lib/vocab'
 import type { Source, VocabStatus } from '@/shared/types'
 
 type Json<T> = T extends Date
@@ -21,7 +21,8 @@ export type BookDetail = Json<NonNullable<ReturnType<typeof getBook>>>
 export type Chapter = BookDetail['chapters'][number]
 export type TypeCounts = Book['counts']
 export type Highlight = Json<NonNullable<ReturnType<typeof getHighlight>>>
-export type Vocab = Json<NonNullable<ReturnType<typeof getVocab>>>
+export type Vocab = Json<ReturnType<typeof listVocab>['items'][number]>
+export type VocabDetail = Json<NonNullable<ReturnType<typeof getVocab>>>
 export type Lore = Json<ReturnType<typeof listLore>[number]>
 export type ColorMapping = Json<ReturnType<typeof listColorMappings>[number]>
 export type ApiKey = Json<ReturnType<typeof listApiKeys>[number]>

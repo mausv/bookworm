@@ -5,6 +5,7 @@ import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { api } from '@/web/lib/api'
 import { authClient } from '@/web/lib/auth-client'
+import { type MessageKey, useT } from '@/web/lib/i18n'
 import type { Book } from '@/web/lib/types'
 import { loginPath } from '@/web/lib/url'
 import { cn } from '@/web/lib/utils'
@@ -15,11 +16,11 @@ export interface ShellContext {
   openImport: () => void
 }
 
-const NAV: { to: string; label: string; icon: LucideIcon }[] = [
-  { to: '/', label: 'Library', icon: Library },
-  { to: '/triage', label: 'Triage', icon: Inbox },
-  { to: '/review', label: 'Review', icon: Layers },
-  { to: '/settings', label: 'Settings', icon: Settings },
+const NAV: { to: string; label: MessageKey; icon: LucideIcon }[] = [
+  { to: '/', label: 'nav.library', icon: Library },
+  { to: '/triage', label: 'nav.triage', icon: Inbox },
+  { to: '/review', label: 'nav.review', icon: Layers },
+  { to: '/settings', label: 'nav.settings', icon: Settings },
 ]
 
 export function RequireAuth() {
@@ -31,6 +32,7 @@ export function RequireAuth() {
 }
 
 export function AppShell() {
+  const t = useT()
   const [importing, setImporting] = useState(false)
   const books = useQuery({
     queryKey: ['books'],
@@ -50,7 +52,7 @@ export function AppShell() {
             <AppIcon className="size-7" />
             Bookworm
           </Link>
-          <nav aria-label="Main" className="hidden flex-1 gap-1 sm:flex">
+          <nav aria-label={t('nav.main')} className="hidden flex-1 gap-1 sm:flex">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
@@ -65,7 +67,7 @@ export function AppShell() {
                   )
                 }
               >
-                {item.label}
+                {t(item.label)}
                 {item.to === '/triage' && <CountBadge count={unclassified} />}
               </NavLink>
             ))}
@@ -74,10 +76,10 @@ export function AppShell() {
             variant="outline"
             className="ml-auto"
             onClick={context.openImport}
-            aria-label="Import highlights"
+            aria-label={t('import.title')}
           >
             <Upload />
-            <span className="hidden sm:inline">Import</span>
+            <span className="hidden sm:inline">{t('import.button')}</span>
           </Button>
         </div>
       </header>
@@ -87,7 +89,7 @@ export function AppShell() {
       </main>
 
       <nav
-        aria-label="Main"
+        aria-label={t('nav.main')}
         className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm sm:hidden"
       >
         <ul className="grid grid-cols-4">
@@ -109,7 +111,7 @@ export function AppShell() {
                     <CountBadge count={unclassified} className="absolute -top-1.5 left-3.5" />
                   )}
                 </span>
-                {item.label}
+                {t(item.label)}
               </NavLink>
             </li>
           ))}
@@ -122,6 +124,7 @@ export function AppShell() {
 }
 
 function CountBadge({ count, className }: { count: number; className?: string }) {
+  const t = useT()
   if (!count) return null
   return (
     <span
@@ -131,7 +134,7 @@ function CountBadge({ count, className }: { count: number; className?: string })
       )}
     >
       {count > 999 ? '999+' : count}
-      <span className="sr-only"> unclassified</span>
+      <span className="sr-only"> {t('nav.unclassifiedSr')}</span>
     </span>
   )
 }

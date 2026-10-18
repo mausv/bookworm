@@ -4,8 +4,10 @@ import { useLocation } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { AuthShell } from '@/web/components/auth-shell'
 import { authClient } from '@/web/lib/auth-client'
+import { useT } from '@/web/lib/i18n'
 
 export function ConsentPage() {
+  const t = useT()
   const { search } = useLocation()
   const clientId = new URLSearchParams(search).get('client_id') ?? ''
   const [pending, setPending] = useState(false)
@@ -18,11 +20,11 @@ export function ConsentPage() {
         '/oauth2/public-client',
         { query: { client_id: clientId } }
       )
-      if (error) throw new Error(error.message ?? 'Unknown app')
+      if (error) throw new Error(error.message ?? t('consent.unknownApp'))
       return data
     },
   })
-  const name = client.data?.client_name ?? 'An app'
+  const name = client.data?.client_name ?? t('consent.anApp')
 
   async function respond(accept: boolean) {
     setPending(true)
@@ -32,7 +34,7 @@ export function ConsentPage() {
     })
     if (error) {
       setPending(false)
-      return setError(error.message ?? 'Could not complete the request')
+      return setError(error.message ?? t('consent.failed'))
     }
     window.location.assign(data.url)
   }
@@ -41,14 +43,16 @@ export function ConsentPage() {
     <AuthShell>
       <div className="space-y-6">
         <div className="space-y-1">
-          <h1 className="text-2xl">Connect {client.isPending ? '…' : name}</h1>
-          <p className="text-muted-foreground">{name} wants access to your Bookworm library.</p>
+          <h1 className="text-2xl">
+            {t('consent.title', { name: client.isPending ? '…' : name })}
+          </h1>
+          <p className="text-muted-foreground">{t('consent.wants', { name })}</p>
         </div>
         {client.error && <p className="text-sm text-destructive">{client.error.message}</p>}
         <ul className="list-disc space-y-1 pl-5 text-sm">
-          <li>Read your books, highlights, vocabulary and lore</li>
-          <li>Classify highlights, add definitions and write lore entries</li>
-          <li>Stay connected until you revoke access in Settings</li>
+          <li>{t('consent.read')}</li>
+          <li>{t('consent.write')}</li>
+          <li>{t('consent.stay')}</li>
         </ul>
         <div className="flex gap-2">
           <Button
@@ -57,10 +61,10 @@ export function ConsentPage() {
             disabled={pending}
             onClick={() => respond(false)}
           >
-            Deny
+            {t('consent.deny')}
           </Button>
           <Button className="flex-1" disabled={pending} onClick={() => respond(true)}>
-            Approve
+            {t('consent.approve')}
           </Button>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}

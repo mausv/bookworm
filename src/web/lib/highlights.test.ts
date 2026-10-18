@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { groupByChapter, locationLabel, parseTags } from './highlights'
+import { type Translate, translate } from './i18n'
+
+const t: Translate = (key, params) => translate('en', key, params)
 
 describe('groupByChapter', () => {
   it('groups consecutive items by chapter, keeping order', () => {
@@ -23,15 +26,15 @@ describe('groupByChapter', () => {
 
 describe('locationLabel', () => {
   it('prefers the page', () => {
-    expect(locationLabel({ locStart: 120, page: '14' })).toBe('p. 14')
+    expect(locationLabel({ locStart: 120, page: '14' }, t)).toBe('p. 14')
   })
 
   it('falls back to the location', () => {
-    expect(locationLabel({ locStart: 0, page: null })).toBe('loc. 0')
+    expect(locationLabel({ locStart: 0, page: null }, t)).toBe('loc. 0')
   })
 
   it('returns null without either', () => {
-    expect(locationLabel({ locStart: null, page: null })).toBeNull()
+    expect(locationLabel({ locStart: null, page: null }, t)).toBeNull()
   })
 })
 

@@ -10,26 +10,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { LORE_KINDS, type LoreKind } from '@/shared/types'
 import { api } from '@/web/lib/api'
 import { locationLabel } from '@/web/lib/highlights'
+import { useT } from '@/web/lib/i18n'
 import type { Lore } from '@/web/lib/types'
 import { ConfirmDialog } from './confirm-dialog'
-
-const KIND_LABEL: Record<LoreKind, string> = {
-  character: 'Characters',
-  place: 'Places',
-  faction: 'Factions',
-  event: 'Events',
-  concept: 'Concepts',
-  other: 'Other',
-}
-
-const KIND_SINGULAR: Record<LoreKind, string> = {
-  character: 'Character',
-  place: 'Place',
-  faction: 'Faction',
-  event: 'Event',
-  concept: 'Concept',
-  other: 'Other',
-}
 
 function useInvalidateLore(bookId: string) {
   const queryClient = useQueryClient()
@@ -41,6 +24,7 @@ function useInvalidateLore(bookId: string) {
 }
 
 export function LoreEntries({ bookId }: { bookId: string }) {
+  const t = useT()
   const query = useQuery({
     queryKey: ['lore', bookId],
     queryFn: () => api<{ lore: Lore[] }>(`/books/${bookId}/lore`),
@@ -59,21 +43,16 @@ export function LoreEntries({ bookId }: { bookId: string }) {
       ) : (
         <Button variant="outline" onClick={() => setCreating(true)}>
           <Plus />
-          New entry
+          {t('lore.newEntry')}
         </Button>
       )}
-      {!entries.length && !creating && (
-        <p className="text-muted-foreground">
-          No entries yet. Write one yourself, or ask Claude to build a cast list from your lore
-          highlights.
-        </p>
-      )}
+      {!entries.length && !creating && <p className="text-muted-foreground">{t('lore.empty')}</p>}
       {LORE_KINDS.map((kind) => {
         const ofKind = entries.filter((e) => e.kind === kind)
         if (!ofKind.length) return null
         return (
           <section key={kind} className="space-y-6">
-            <h2 className="text-lg text-muted-foreground italic">{KIND_LABEL[kind]}</h2>
+            <h2 className="text-lg text-muted-foreground italic">{t(`lore.kinds.${kind}`)}</h2>
             <ul className="space-y-8">
               {ofKind.map((entry) => (
                 <li key={entry.id}>
@@ -89,6 +68,7 @@ export function LoreEntries({ bookId }: { bookId: string }) {
 }
 
 function NewLoreForm({ bookId, onDone }: { bookId: string; onDone: () => void }) {
+  const t = useT()
   const invalidate = useInvalidateLore(bookId)
   const [name, setName] = useState('')
   const [kind, setKind] = useState<LoreKind>('character')
@@ -101,7 +81,7 @@ function NewLoreForm({ bookId, onDone }: { bookId: string; onDone: () => void })
         json: { bookId, name: name.trim(), kind, body },
       }),
     onSuccess: async ({ created }) => {
-      toast.success(created ? 'Entry added' : 'Existing entry updated')
+      toast.success(created ? t('lore.added') : t('lore.updated'))
       await invalidate()
       onDone()
     },
@@ -117,7 +97,7 @@ function NewLoreForm({ bookId, onDone }: { bookId: string; onDone: () => void })
     <form onSubmit={submit} className="space-y-4 rounded-lg bg-card p-3 ring-1 ring-border sm:p-4">
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
         <div className="space-y-1.5">
-          <Label htmlFor="lore-name">Name</Label>
+          <Label htmlFor="lore-name">{t('lore.name')}</Label>
           <Input
             id="lore-name"
             value={name}
@@ -127,7 +107,7 @@ function NewLoreForm({ bookId, onDone }: { bookId: string; onDone: () => void })
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="lore-kind">Kind</Label>
+          <Label htmlFor="lore-kind">{t('lore.kind')}</Label>
           <NativeSelect
             id="lore-kind"
             className="w-full"
@@ -136,22 +116,22 @@ function NewLoreForm({ bookId, onDone }: { bookId: string; onDone: () => void })
           >
             {LORE_KINDS.map((k) => (
               <option key={k} value={k}>
-                {KIND_SINGULAR[k]}
+                {t(`lore.kind.${k}`)}
               </option>
             ))}
           </NativeSelect>
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="lore-body">Notes</Label>
+        <Label htmlFor="lore-body">{t('lore.notes')}</Label>
         <Textarea id="lore-body" value={body} onChange={(e) => setBody(e.target.value)} />
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onDone}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={create.isPending || !name.trim()}>
-          {create.isPending ? 'Adding…' : 'Add entry'}
+          {create.isPending ? t('common.adding') : t('lore.addEntry')}
         </Button>
       </div>
     </form>
@@ -159,6 +139,7 @@ function NewLoreForm({ bookId, onDone }: { bookId: string; onDone: () => void })
 }
 
 function LoreEntry({ entry }: { entry: Lore }) {
+  const t = useT()
   const invalidate = useInvalidateLore(entry.bookId)
   const [body, setBody] = useState(entry.body)
   const [confirming, setConfirming] = useState(false)
@@ -166,7 +147,7 @@ function LoreEntry({ entry }: { entry: Lore }) {
   const save = useMutation({
     mutationFn: () => api(`/lore/${entry.id}`, { method: 'PATCH', json: { body } }),
     onSuccess: async () => {
-      toast.success('Saved')
+      toast.success(t('common.saved'))
       await invalidate()
     },
     onError: (error) => toast.error(error.message),
@@ -195,7 +176,7 @@ function LoreEntry({ entry }: { entry: Lore }) {
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label={`Delete ${entry.name}`}
+          aria-label={t('lore.deleteName', { name: entry.name })}
           onClick={() => setConfirming(true)}
         >
           <Trash2 />
@@ -203,21 +184,21 @@ function LoreEntry({ entry }: { entry: Lore }) {
       </div>
       <div className="space-y-2">
         <Label htmlFor={`lore-${entry.id}`} className="sr-only">
-          Notes on {entry.name}
+          {t('lore.notesOn', { name: entry.name })}
         </Label>
         <Textarea
           id={`lore-${entry.id}`}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Who or what this is"
+          placeholder={t('lore.bodyPlaceholder')}
         />
         {body !== entry.body && (
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setBody(entry.body)}>
-              Revert
+              {t('common.revert')}
             </Button>
             <Button disabled={save.isPending} onClick={() => save.mutate()}>
-              {save.isPending ? 'Saving…' : 'Save'}
+              {save.isPending ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         )}
@@ -229,7 +210,7 @@ function LoreEntry({ entry }: { entry: Lore }) {
               <div className="min-w-0 flex-1">
                 <p className="font-serif text-base/relaxed">{h.text}</p>
                 <p className="text-sm text-muted-foreground">
-                  {[h.chapter, locationLabel({ locStart: h.locStart, page: null })]
+                  {[h.chapter, locationLabel({ locStart: h.locStart, page: null }, t)]
                     .filter(Boolean)
                     .join(', ')}
                 </p>
@@ -237,7 +218,7 @@ function LoreEntry({ entry }: { entry: Lore }) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Unlink highlight"
+                aria-label={t('lore.unlink')}
                 disabled={unlink.isPending}
                 onClick={() => unlink.mutate(h.id)}
               >
@@ -250,9 +231,9 @@ function LoreEntry({ entry }: { entry: Lore }) {
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title={`Delete ${entry.name}?`}
-        description="The entry and its notes are removed. The linked highlights stay."
-        confirmLabel="Delete entry"
+        title={t('lore.deleteTitle', { name: entry.name })}
+        description={t('lore.deleteDescription')}
+        confirmLabel={t('lore.deleteEntry')}
         pending={remove.isPending}
         onConfirm={() => remove.mutate()}
       />

@@ -1,3 +1,5 @@
+import type { Translate } from './i18n'
+
 interface Located {
   chapterId: string | null
   chapter: string | null
@@ -13,15 +15,12 @@ export function groupByChapter<T extends Located>(items: T[]) {
   return groups
 }
 
-export function locationLabel({
-  locStart,
-  page,
-}: {
-  locStart: number | null
-  page: string | null
-}) {
-  if (page) return `p. ${page}`
-  if (locStart !== null) return `loc. ${locStart}`
+export function locationLabel(
+  { locStart, page }: { locStart: number | null; page: string | null },
+  t: Translate
+) {
+  if (page) return t('location.page', { page })
+  if (locStart !== null) return t('location.loc', { loc: locStart })
   return null
 }
 

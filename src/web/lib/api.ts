@@ -1,3 +1,4 @@
+import { currentLocale, translate } from './i18n'
 import type { ImportResponse } from './types'
 import { loginPath } from './url'
 
@@ -20,7 +21,7 @@ async function errorMessage(res: Response) {
   if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
     return body.error
   }
-  return `Request failed (${res.status})`
+  return translate(currentLocale(), 'error.requestFailed', { status: res.status })
 }
 
 export async function api<T>(path: string, { method = 'GET', json }: Options = {}): Promise<T> {

@@ -6,29 +6,22 @@ import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/native-select'
 import { HIGHLIGHT_TYPES, type Source, SOURCES } from '@/shared/types'
 import { api } from '@/web/lib/api'
+import { useT } from '@/web/lib/i18n'
 import type { ColorMapping } from '@/web/lib/types'
 import { cn } from '@/web/lib/utils'
-import { TYPE_LABEL } from './type-style'
-
-const SOURCE_LABEL: Record<Source, string> = {
-  'kindle-html': 'Kindle notebook',
-  clippings: 'My Clippings.txt',
-  readest: 'Readest',
-}
 
 export function ColorMappings() {
+  const t = useT()
   const [source, setSource] = useState<Source>('kindle-html')
 
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-2xl">Highlight colors</h2>
-        <p className="text-sm text-muted-foreground">
-          Which type each highlight color becomes. Changes apply to future imports.
-        </p>
+        <h2 className="text-2xl">{t('colors.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('colors.description')}</p>
       </div>
-      <div role="radiogroup" aria-label="Source" className="flex flex-wrap gap-1">
-        {SOURCES.map((s) => (
+      <div role="radiogroup" aria-label={t('colors.source')} className="flex flex-wrap gap-1">
+        {SOURCES.filter((s) => s !== 'manual').map((s) => (
           <button
             key={s}
             type="button"
@@ -42,7 +35,7 @@ export function ColorMappings() {
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             )}
           >
-            {SOURCE_LABEL[s]}
+            {t(`source.${s}`)}
           </button>
         ))}
       </div>
@@ -52,6 +45,7 @@ export function ColorMappings() {
 }
 
 function MappingList({ source }: { source: Source }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const query = useQuery({
     queryKey: ['colors', source],
@@ -75,9 +69,7 @@ function MappingList({ source }: { source: Source }) {
   if (!mappings.length) {
     return (
       <p className="text-sm text-muted-foreground">
-        {source === 'clippings'
-          ? 'My Clippings.txt has no colors, so its highlights arrive unclassified and wait in Triage.'
-          : 'No colors seen from this source yet.'}
+        {source === 'clippings' ? t('colors.clippingsNone') : t('colors.none')}
       </p>
     )
   }
@@ -93,25 +85,25 @@ function MappingList({ source }: { source: Source }) {
           />
           <div className="min-w-0 flex-1">
             <p className="truncate capitalize">{m.color}</p>
-            {m.isDefault && <p className="text-xs text-muted-foreground">Default</p>}
+            {m.isDefault && <p className="text-xs text-muted-foreground">{t('colors.default')}</p>}
           </div>
           <NativeSelect
-            aria-label={`Type for ${m.color}`}
+            aria-label={t('colors.typeFor', { color: m.color })}
             className="w-36"
             value={m.type}
             disabled={update.isPending}
             onChange={(e) => update.mutate({ color: m.color, type: e.target.value })}
           >
-            {HIGHLIGHT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {TYPE_LABEL[t]}
+            {HIGHLIGHT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t(`type.${type}`)}
               </option>
             ))}
           </NativeSelect>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label={`Reset ${m.color} to default`}
+            aria-label={t('colors.reset', { color: m.color })}
             disabled={m.isDefault || update.isPending}
             onClick={() => update.mutate({ color: m.color, type: null })}
           >

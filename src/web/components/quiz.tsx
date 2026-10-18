@@ -7,20 +7,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { api } from '@/web/lib/api'
+import { type MessageKey, useT } from '@/web/lib/i18n'
 import type { QuizAnswer, QuizMode, QuizQuestion } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import { cn } from '@/web/lib/utils'
 import type { Scope } from '@/web/pages/review'
 
-const MODES: { value: QuizMode; label: string }[] = [
-  { value: 'choice', label: 'Multiple choice' },
-  { value: 'typed', label: 'Type the answer' },
-  { value: 'mixed', label: 'Mixed' },
+const MODES: { value: QuizMode; label: MessageKey }[] = [
+  { value: 'choice', label: 'quiz.choice' },
+  { value: 'typed', label: 'quiz.typed' },
+  { value: 'mixed', label: 'quiz.mixed' },
 ]
 
 const COUNTS = [5, 10, 20]
 
 export function Quiz({ scope }: { scope: Scope }) {
+  const t = useT()
   const [mode, setMode] = useState<QuizMode>('choice')
   const [count, setCount] = useState(10)
   const [round, setRound] = useState(0)
@@ -36,7 +38,7 @@ export function Quiz({ scope }: { scope: Scope }) {
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="quiz-mode">Questions</Label>
+            <Label htmlFor="quiz-mode">{t('quiz.questions')}</Label>
             <NativeSelect
               id="quiz-mode"
               className="w-full"
@@ -47,13 +49,13 @@ export function Quiz({ scope }: { scope: Scope }) {
             >
               {MODES.map((m) => (
                 <option key={m.value} value={m.value}>
-                  {m.label}
+                  {t(m.label)}
                 </option>
               ))}
             </NativeSelect>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="quiz-count">Length</Label>
+            <Label htmlFor="quiz-count">{t('quiz.length')}</Label>
             <NativeSelect
               id="quiz-count"
               className="w-full"
@@ -62,14 +64,14 @@ export function Quiz({ scope }: { scope: Scope }) {
             >
               {COUNTS.map((c) => (
                 <option key={c} value={c}>
-                  {c} words
+                  {t('quiz.words', { count: c })}
                 </option>
               ))}
             </NativeSelect>
           </div>
         </div>
         <Button type="submit" size="lg" className="w-full">
-          Start quiz
+          {t('quiz.start')}
         </Button>
       </form>
     )
@@ -103,6 +105,7 @@ function QuizRound({
   onRetry: () => void
   onSetup: () => void
 }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [index, setIndex] = useState(0)
   const [score, setScore] = useState(0)
@@ -136,21 +139,17 @@ function QuizRound({
     onError: (error) => toast.error(error.message),
   })
 
-  if (quiz.isPending) return <p className="text-muted-foreground">Picking words…</p>
+  if (quiz.isPending) return <p className="text-muted-foreground">{t('quiz.picking')}</p>
   if (quiz.error) return <p className="text-destructive">{quiz.error.message}</p>
 
   const questions = quiz.data.questions
   if (!questions.length) {
     return (
       <div className="space-y-3 py-6">
-        <p className="font-heading text-2xl">No defined words here yet.</p>
-        <p className="text-muted-foreground">
-          The quiz only uses words that have a definition. Add definitions in the book’s Vocab tab,
-          or ask Claude to fill them in through the Bookworm connector, for example “define the new
-          words in my latest book”.
-        </p>
+        <p className="font-heading text-2xl">{t('quiz.emptyTitle')}</p>
+        <p className="text-muted-foreground">{t('quiz.emptyBody')}</p>
         <Button variant="outline" onClick={onSetup}>
-          Back
+          {t('common.back')}
         </Button>
       </div>
     )
@@ -161,18 +160,16 @@ function QuizRound({
     return (
       <div className="space-y-4 py-10 text-center">
         <p className="font-heading text-4xl tabular-nums">
-          {score} of {questions.length}
+          {t('common.nOfTotal', { n: score, total: questions.length })}
         </p>
         <p className="text-muted-foreground">
-          {score === questions.length
-            ? 'Every one right.'
-            : 'Another round helps the missed ones stick.'}
+          {score === questions.length ? t('quiz.perfect') : t('quiz.again')}
         </p>
         <div className="flex justify-center gap-2">
           <Button variant="outline" onClick={onSetup}>
-            Change settings
+            {t('quiz.changeSettings')}
           </Button>
-          <Button onClick={onRetry}>New round</Button>
+          <Button onClick={onRetry}>{t('quiz.newRound')}</Button>
         </div>
       </div>
     )
@@ -186,14 +183,14 @@ function QuizRound({
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
-        Question {index + 1} of {questions.length}, {score} right so far
+        {t('quiz.progress', { n: index + 1, total: questions.length, score })}
       </p>
       <article
         key={index}
         className="animate-in space-y-4 rounded-2xl border border-l-4 border-l-vocab bg-card p-5 duration-200 fade-in-0 sm:p-7"
       >
         <p className="text-sm text-muted-foreground">
-          {question.direction === 'definition' ? 'What does this mean?' : 'Which word fits?'}
+          {question.direction === 'definition' ? t('quiz.whatMeans') : t('quiz.whichWord')}
         </p>
         <h2
           className={cn(
@@ -241,16 +238,20 @@ function QuizRound({
             ) : (
               <X aria-hidden className="size-5" />
             )}
-            {result.correct ? (result.close ? 'Close enough' : 'Correct') : 'Not quite'}
+            {result.correct
+              ? result.close
+                ? t('quiz.close')
+                : t('quiz.correct')
+              : t('quiz.wrong')}
           </p>
           {(!result.correct || result.close) && (
             <p>
-              <span className="text-muted-foreground">Answer: </span>
+              <span className="text-muted-foreground">{t('quiz.answer')} </span>
               <span className="font-serif text-lg">{result.expected}</span>
             </p>
           )}
           <Button className="w-full" size="lg" onClick={next} autoFocus>
-            {index + 1 < questions.length ? 'Next' : 'See score'}
+            {index + 1 < questions.length ? t('quiz.next') : t('quiz.seeScore')}
           </Button>
         </div>
       )}
@@ -302,6 +303,7 @@ function TypedAnswer({
   disabled: boolean
   onSubmit: (answer: string) => void
 }) {
+  const t = useT()
   const [value, setValue] = useState('')
 
   function submit(event: FormEvent) {
@@ -312,7 +314,7 @@ function TypedAnswer({
   return (
     <form onSubmit={submit} className="flex gap-2">
       <Input
-        aria-label="Your answer"
+        aria-label={t('quiz.yourAnswer')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         disabled={disabled}
@@ -322,7 +324,7 @@ function TypedAnswer({
         spellCheck={false}
       />
       <Button type="submit" disabled={disabled || !value.trim()}>
-        Check
+        {t('quiz.check')}
       </Button>
     </form>
   )

@@ -6,29 +6,31 @@ import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/native-select'
 import type { VocabStatus } from '@/shared/types'
 import { api } from '@/web/lib/api'
+import { type MessageKey, useT } from '@/web/lib/i18n'
 import { type CardGrade, nextStatus, splitTerm } from '@/web/lib/review'
 import type { Page, Vocab } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import type { Scope } from '@/web/pages/review'
-import { StatusChip } from './vocab-list'
+import { SeenBadge, StatusChip } from './vocab-list'
 
 const FILTERS = {
-  due: { label: 'New and learning', statuses: ['new', 'learning'] },
-  new: { label: 'New', statuses: ['new'] },
-  learning: { label: 'Learning', statuses: ['learning'] },
-  known: { label: 'Known', statuses: ['known'] },
-  all: { label: 'All words', statuses: [undefined] },
-} satisfies Record<string, { label: string; statuses: (VocabStatus | undefined)[] }>
+  due: { label: 'cards.filterDue', statuses: ['new', 'learning'] },
+  new: { label: 'cards.filterNew', statuses: ['new'] },
+  learning: { label: 'cards.filterLearning', statuses: ['learning'] },
+  known: { label: 'cards.filterKnown', statuses: ['known'] },
+  all: { label: 'cards.filterAll', statuses: [undefined] },
+} satisfies Record<string, { label: MessageKey; statuses: (VocabStatus | undefined)[] }>
 
 type Filter = keyof typeof FILTERS
 
-const GRADES: { grade: CardGrade; label: string }[] = [
-  { grade: 'again', label: 'Again' },
-  { grade: 'good', label: 'Got it' },
-  { grade: 'known', label: 'Known' },
+const GRADES: { grade: CardGrade; label: MessageKey }[] = [
+  { grade: 'again', label: 'cards.again' },
+  { grade: 'good', label: 'cards.good' },
+  { grade: 'known', label: 'status.known' },
 ]
 
 export function Flashcards({ scope }: { scope: Scope }) {
+  const t = useT()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>('due')
   const [index, setIndex] = useState(0)
@@ -65,7 +67,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
 
   const filterSelect = (
     <NativeSelect
-      aria-label="Which words"
+      aria-label={t('cards.whichWords')}
       className="w-full sm:w-56"
       value={filter}
       onChange={(e) => {
@@ -75,7 +77,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
     >
       {Object.entries(FILTERS).map(([value, { label }]) => (
         <option key={value} value={value}>
-          {label}
+          {t(label)}
         </option>
       ))}
     </NativeSelect>
@@ -92,10 +94,8 @@ export function Flashcards({ scope }: { scope: Scope }) {
       <div className="space-y-6">
         {filterSelect}
         <div className="space-y-2 py-6">
-          <p className="font-heading text-2xl">No words to review here.</p>
-          <p className="text-muted-foreground">
-            Mark highlights as vocab in a book or in Triage, or pick a different set of words.
-          </p>
+          <p className="font-heading text-2xl">{t('cards.emptyTitle')}</p>
+          <p className="text-muted-foreground">{t('cards.emptyBody')}</p>
         </div>
       </div>
     )
@@ -104,8 +104,8 @@ export function Flashcards({ scope }: { scope: Scope }) {
   if (!card) {
     return (
       <div className="space-y-4 py-10 text-center">
-        <p className="font-heading text-2xl">You went through all {cards.length} cards.</p>
-        <Button onClick={() => restart()}>Start again</Button>
+        <p className="font-heading text-2xl">{t('cards.done', { count: cards.length })}</p>
+        <Button onClick={() => restart()}>{t('cards.startAgain')}</Button>
       </div>
     )
   }
@@ -123,7 +123,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         {filterSelect}
         <p className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
-          {index + 1} of {cards.length}
+          {t('common.nOfTotal', { n: index + 1, total: cards.length })}
         </p>
       </div>
 
@@ -133,7 +133,10 @@ export function Flashcards({ scope }: { scope: Scope }) {
       >
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm text-muted-foreground italic">{card.bookTitle}</p>
-          <StatusChip status={card.status} />
+          <span className="flex shrink-0 items-center gap-1.5">
+            <SeenBadge occurrences={card.occurrences} />
+            <StatusChip status={card.status} />
+          </span>
         </div>
         <h2 className="font-serif text-3xl font-semibold sm:text-4xl">
           {card.term}
@@ -148,15 +151,12 @@ export function Flashcards({ scope }: { scope: Scope }) {
             {card.definition ? (
               <p className="text-lg">{card.definition}</p>
             ) : (
-              <p className="text-muted-foreground">
-                No definition yet. Ask Claude to define your new words through the Bookworm
-                connector, or add one in the book.
-              </p>
+              <p className="text-muted-foreground">{t('cards.noDefinition')}</p>
             )}
             {card.definitionBy === 'claude' && (
               <p className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Sparkles aria-hidden className="size-3.5" />
-                Defined by Claude
+                {t('vocab.definedByClaude')}
               </p>
             )}
             <Context text={card.context} term={card.term} />
@@ -173,7 +173,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
             className="w-full"
             onClick={() => setRevealed(true)}
           >
-            Show definition
+            {t('cards.showDefinition')}
           </Button>
         )}
       </article>
@@ -187,7 +187,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
               size="lg"
               onClick={() => answer(g)}
             >
-              {label}
+              {t(label)}
             </Button>
           ))}
         </div>
