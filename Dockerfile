@@ -16,7 +16,8 @@ FROM node:22-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
   PORT=3000 \
-  DATA_DIR=/data
+  DATA_DIR=/data \
+  AUTO_DEFINE=true
 COPY --from=build --chown=node:node /app/package.json ./
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist

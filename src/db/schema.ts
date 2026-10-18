@@ -9,6 +9,7 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core'
 import {
+  DEFINITION_SOURCES,
   HIGHLIGHT_TYPES,
   LORE_KINDS,
   SOURCES,
@@ -348,6 +349,8 @@ export const highlight = sqliteTable(
     page: text('page'),
     cfi: text('cfi'),
     note: text('note'),
+    explanation: text('explanation'),
+    explanationBy: text('explanation_by', { enum: ['me', 'claude'] }),
     vocabId: text('vocab_id').references((): AnySQLiteColumn => vocabEntry.id, {
       onDelete: 'set null',
     }),
@@ -392,7 +395,7 @@ export const vocabEntry = sqliteTable(
     language: text('language'),
     example: text('example'),
     status: text('status', { enum: VOCAB_STATUSES }).default('new').notNull(),
-    definitionBy: text('definition_by', { enum: ['me', 'claude'] }),
+    definitionBy: text('definition_by', { enum: DEFINITION_SOURCES }),
     translation: text('translation'),
     translationBy: text('translation_by', { enum: TRANSLATION_SOURCES }),
     createdAt: createdAt(),

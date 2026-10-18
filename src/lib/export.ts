@@ -109,6 +109,7 @@ export function bookMarkdown(userId: string, bookId: string) {
         lines.push(quote(h.text))
         const meta = [where(h), ...h.tags.map((t) => `#${t.replace(/\s+/g, '-')}`)].filter(Boolean)
         if (meta.length) lines.push(`> — ${meta.join(' ')}`)
+        if (h.explanation) lines.push('', `*${h.explanation}*`)
         if (h.note) lines.push('', h.note)
         lines.push('')
       }

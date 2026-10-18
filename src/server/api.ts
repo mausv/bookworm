@@ -15,6 +15,7 @@ import {
   listTags,
   updateHighlight,
 } from '@/lib/highlights'
+import { defineMissing } from '@/lib/dictionary'
 import { bookMarkdown, jsonDump, vocabTsv } from '@/lib/export'
 import { addHighlight, importContent } from '@/lib/import'
 import { deleteLore, listLore, unlinkLoreHighlight, updateLore, upsertLore } from '@/lib/lore'
@@ -115,6 +116,7 @@ export const api = new Hono<Env>()
         type: query(highlightType, c.req.query('type')),
         q: c.req.query('q'),
         tag: c.req.query('tag'),
+        missingExplanation: c.req.query('missingExplanation') === 'true',
         ...pageParams(c),
       })
     )
@@ -157,6 +159,17 @@ export const api = new Hono<Env>()
       })
     )
   )
+  .post('/vocab/define', async (c) => {
+    const parsed = await parseJson(c, translateSchema)
+    if (!parsed.success) return invalid(c, parsed.error)
+    const { bookId } = parsed.data
+    if (bookId && !getBook(c.get('userId'), bookId)) return c.json({ error: 'Book not found' }, 404)
+    try {
+      return c.json(await defineMissing(c.get('userId'), bookId ? [bookId] : undefined))
+    } catch (error) {
+      return c.json({ error: error instanceof Error ? error.message : 'Lookup failed' }, 502)
+    }
+  })
   .post('/vocab/translate', async (c) => {
     const parsed = await parseJson(c, translateSchema)
     if (!parsed.success) return invalid(c, parsed.error)

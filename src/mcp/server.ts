@@ -4,7 +4,13 @@ import { z } from 'zod'
 import { version } from '../../package.json'
 import { getBook, listBooks } from '@/lib/books'
 import { bookMarkdown } from '@/lib/export'
-import { addNote, addTags, classifyHighlights, listHighlights } from '@/lib/highlights'
+import {
+  addNote,
+  addTags,
+  classifyHighlights,
+  listHighlights,
+  updateHighlight,
+} from '@/lib/highlights'
 import { addHighlight } from '@/lib/import'
 import { listLore, upsertLore } from '@/lib/lore'
 import { highlightType, id, loreKind, tags, vocabStatus } from '@/lib/validation'
@@ -17,6 +23,7 @@ Highlight types follow the user's color convention:
 - lore (blue/aqua): book lore — world, characters, places, factions, events. Lore entries are a per-book wiki linked to the highlights they come from.
 - unclassified: no color info (e.g. Kindle My Clippings.txt) or an unmapped color; the user triages these.
 Notes on highlights are the user's own words (for vocab they are often the user's own definition).
+Definitions marked "dictionary" come from Wiktionary's first sense and may not fit the context. Quotes can carry an explanation (add_explanation); get_book reports how many words lack a definition and quotes lack an explanation.
 The user reads in English and Spanish. Vocab entries carry a translation into the other language (set_translations); definitions stay in the book's language.
 List tools return { items, nextCursor }; pass nextCursor back as cursor to get the next page. Ids come from list results.`
 
@@ -52,6 +59,8 @@ function highlightItem(h: ReturnType<typeof listHighlights>['items'][number], wi
     type: h.type,
     color: h.color,
     note: h.note,
+    explanation: h.explanation,
+    explanationBy: h.explanationBy,
     tags: h.tags,
     chapter: h.chapter,
     location: h.locStart,
@@ -105,6 +114,7 @@ export function createMcpServer(userId: string) {
           language: book.language,
           counts: book.counts,
           loreEntries: book.loreEntries,
+          missing: book.missing,
           chapters: book.chapters.map((c) => ({ id: c.id, title: c.title, counts: c.counts })),
         })
       )
@@ -115,7 +125,7 @@ export function createMcpServer(userId: string) {
     'search_highlights',
     {
       description:
-        'Search highlights by text or note, optionally scoped to a book, chapter, type, tag, or created since a date. Results within a book come in reading order; otherwise newest first.',
+        'Search highlights by text or note, optionally scoped to a book, chapter, type, tag, or created since a date, or only those without an explanation (use with type quote to find quotes to explain). Results within a book come in reading order; otherwise newest first.',
       inputSchema: {
         query: z.string().optional().describe('Substring to match in the highlight text or note'),
         book_id: bookId.optional(),
@@ -126,11 +136,15 @@ export function createMcpServer(userId: string) {
           .datetime({ offset: true })
           .optional()
           .describe('ISO date-time; only highlights imported since then'),
+        missing_explanation: z
+          .boolean()
+          .optional()
+          .describe('Only highlights without an explanation'),
         ...pageInput,
       },
       annotations: read,
     },
-    ({ query, book_id, chapter_id, type, tag, since, limit, cursor }) => {
+    ({ query, book_id, chapter_id, type, tag, since, missing_explanation, limit, cursor }) => {
       const result = listHighlights(userId, {
         q: query,
         bookId: book_id,
@@ -138,6 +152,7 @@ export function createMcpServer(userId: string) {
         type,
         tag,
         since: since ? new Date(since) : undefined,
+        missingExplanation: missing_explanation,
         limit,
         cursor,
       })
@@ -246,7 +261,7 @@ export function createMcpServer(userId: string) {
     'add_definition',
     {
       description:
-        'Write a definition for a vocab entry (marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep it short, dictionary-style, for the sense used in the highlight context. Optionally trim the term down to the word itself.',
+        'Write a definition for a vocab entry (marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep it short, dictionary-style, for the sense used in the highlight context. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Optionally trim the term down to the word itself. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context.',
       inputSchema: {
         vocab_id: id.describe('Vocab entry id from get_vocab'),
         definition: z.string().trim().min(1).max(2000),
@@ -357,6 +372,21 @@ export function createMcpServer(userId: string) {
       })
       if (!('highlight' in result) || !result.highlight) return reply(result)
       return reply({ created: result.created, highlight: highlightItem(result.highlight, true) })
+    }
+  )
+
+  server.registerTool(
+    'add_explanation',
+    {
+      description:
+        "Explain what a highlight means in the book's context — mainly quotes (orange): one to three plain sentences on the meaning, any idiom or reference, and why it matters there. Write in the book's language. Replaces an existing explanation; doesn't touch the user's note.",
+      inputSchema: { highlight_id: id, explanation: z.string().trim().min(1).max(5000) },
+      annotations: write,
+    },
+    ({ highlight_id, explanation }) => {
+      const result = updateHighlight(userId, highlight_id, { explanation, explanationBy: 'claude' })
+      if (!('highlight' in result) || !result.highlight) return reply(result)
+      return reply({ highlight: highlightItem(result.highlight, true) })
     }
   )
 

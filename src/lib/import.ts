@@ -10,7 +10,7 @@ import type { HighlightType, Source } from '@/shared/types'
 import { ownsBook } from './access'
 import { type ColorMap, getColorMap, typeForColor } from './colors'
 import { getHighlight } from './highlights'
-import { translateInBackground } from './translate'
+import { enrichInBackground } from './enrich'
 import { ensureVocab } from './vocab'
 
 export const importers: Importer[] = [kindleHtml, clippings, readest]
@@ -145,7 +145,7 @@ export function importContent(userId: string, content: string, source?: Source) 
       .filter((b) => b.highlights.length)
       .map((b) => importBook(userId, b, importer.source, colors)),
   }))
-  translateInBackground(
+  enrichInBackground(
     userId,
     result.books.map((b) => b.bookId)
   )
@@ -201,7 +201,7 @@ export function addHighlight(userId: string, input: ManualHighlight) {
     return { highlight: getHighlight(userId, id), created: !existing }
   })
   if (result.created && input.type === 'vocab' && result.highlight) {
-    translateInBackground(userId, [result.highlight.bookId])
+    enrichInBackground(userId, [result.highlight.bookId])
   }
   return result
 }

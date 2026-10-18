@@ -80,10 +80,3 @@ export async function translateMissing(userId: string, bookIds?: string[]) {
   }
   return { translated }
 }
-
-export function translateInBackground(userId: string, bookIds: string[]) {
-  if (!autoTranslateEnabled() || !bookIds.length) return
-  translateMissing(userId, bookIds).catch((error: unknown) => {
-    console.error(`auto-translate failed: ${error instanceof Error ? error.message : error}`)
-  })
-}

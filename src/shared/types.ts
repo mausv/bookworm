@@ -18,3 +18,6 @@ export function translationTarget(language: string | null) {
   if (language === 'es') return 'en'
   return null
 }
+
+export const DEFINITION_SOURCES = ['me', 'claude', 'dictionary'] as const
+export type DefinitionSource = (typeof DEFINITION_SOURCES)[number]

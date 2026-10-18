@@ -1,0 +1,61 @@
+{
+  "en": [
+    {
+      "partOfSpeech": "Adjective",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/reddish\" title=\"reddish\">Reddish</a> in color, especially of the <a rel=\"mw:WikiLink\" href=\"/wiki/face\" title=\"face\">face</a>, <a rel=\"mw:WikiLink\" href=\"/wiki/fire\" title=\"fire\">fire</a>, or <a rel=\"mw:WikiLink\" href=\"/wiki/sky\" title=\"sky\">sky</a>.",
+          "parsedExamples": [
+            {
+              "example": "<div class=\"color-panel mw-no-invert\" about=\"#mwt15\" typeof=\"mw:Transclusion\">ruddy: <span style=\"background-color:#ff0028;  display:inline-block; width:80px\"><span typeof=\"mw:Entity\">&nbsp;</span></span></div>"
+            }
+          ],
+          "examples": [
+            "<div class=\"color-panel mw-no-invert\" about=\"#mwt15\" typeof=\"mw:Transclusion\">ruddy: <span style=\"background-color:#ff0028;  display:inline-block; width:80px\"><span typeof=\"mw:Entity\">&nbsp;</span></span></div>"
+          ]
+        },
+        {
+          "definition": "<a rel=\"mw:WikiLink\" href=\"/wiki/robust\" title=\"robust\">Robust</a> and vigorous, like a person with a red <a rel=\"mw:WikiLink\" href=\"/wiki/complexion\" title=\"complexion\">complexion</a> (as compared to a <a rel=\"mw:WikiLink\" href=\"/wiki/pale\" title=\"pale\">pale</a> one).",
+          "parsedExamples": [{ "example": "in <b>ruddy</b> health" }],
+          "examples": ["in <b>ruddy</b> health"]
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt20\" typeof=\"mw:Transclusion\"></span> <span class=\"use-with-mention\" about=\"#mwt21\" typeof=\"mw:Transclusion\">A mild intensifier, expressing irritation.</span>"
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Adverb",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt114\" typeof=\"mw:Transclusion\"></span> <span class=\"use-with-mention\" about=\"#mwt115\" typeof=\"mw:Transclusion\">A mild intensifier, expressing irritation.</span>"
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Noun",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt119\" typeof=\"mw:Transclusion\"></span> A <a rel=\"mw:WikiLink\" href=\"/wiki/ruddy_duck\" title=\"ruddy duck\">ruddy duck</a>."
+        },
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt121\" typeof=\"mw:Transclusion\"></span> A <a rel=\"mw:WikiLink\" href=\"/wiki/ruddy_ground_dove\" title=\"ruddy ground dove\">ruddy ground dove</a>."
+        }
+      ]
+    },
+    {
+      "partOfSpeech": "Verb",
+      "language": "English",
+      "definitions": [
+        {
+          "definition": "<span class=\"usage-label-sense\" about=\"#mwt127\" typeof=\"mw:Transclusion\"></span> To make reddish in colour.",
+          "parsedExamples": [{ "example": "The sunset <b>ruddied</b> our faces." }],
+          "examples": ["The sunset <b>ruddied</b> our faces."]
+        }
+      ]
+    }
+  ]
+}

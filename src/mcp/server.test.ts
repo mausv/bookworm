@@ -321,3 +321,36 @@ describe('translations', () => {
     expect(vocab).toMatchObject({ translation: 'mirar', translationBy: 'claude' })
   })
 })
+
+describe('explanations and missing counts', () => {
+  it('reports what a book is missing', async () => {
+    const book = await callTool(
+      'get_book',
+      { book_id: bookId },
+      z.looseObject({ missing: z.object({ definitions: z.number(), explanations: z.number() }) })
+    )
+    expect(book.missing.explanations).toBe(2)
+    expect(book.missing.definitions).toBeGreaterThan(0)
+  })
+
+  it('explains a quote and drops it from the missing list', async () => {
+    const { items } = await callTool(
+      'search_highlights',
+      { book_id: bookId, type: 'quote', missing_explanation: true },
+      list
+    )
+    expect(items).toHaveLength(2)
+    const { highlight } = await callTool(
+      'add_explanation',
+      { highlight_id: items[0].id, explanation: 'Vin notices comfort she has never had.' },
+      z.object({ highlight: z.looseObject({ explanation: z.string(), explanationBy: z.string() }) })
+    )
+    expect(highlight).toMatchObject({ explanationBy: 'claude' })
+    const after = await callTool(
+      'search_highlights',
+      { book_id: bookId, type: 'quote', missing_explanation: true },
+      list
+    )
+    expect(after.items).toHaveLength(1)
+  })
+})

@@ -14,6 +14,7 @@ export interface HighlightFilter extends PageInput {
   q?: string
   tag?: string
   since?: Date
+  missingExplanation?: boolean
 }
 
 const columns = {
@@ -27,6 +28,8 @@ const columns = {
   color: highlight.color,
   source: highlight.source,
   note: highlight.note,
+  explanation: highlight.explanation,
+  explanationBy: highlight.explanationBy,
   locStart: highlight.locStart,
   page: highlight.page,
   highlightedAt: highlight.highlightedAt,
@@ -64,6 +67,9 @@ export function listHighlights(userId: string, filter: HighlightFilter = {}) {
   if (filter.chapterId) conditions.push(chapterCondition(filter.chapterId))
   if (filter.type) conditions.push(eq(highlight.type, filter.type))
   if (filter.since) conditions.push(gte(highlight.createdAt, filter.since))
+  if (filter.missingExplanation) {
+    conditions.push(sql`(${highlight.explanation} is null or ${highlight.explanation} = '')`)
+  }
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q)}%`
     conditions.push(
@@ -111,6 +117,8 @@ export function getHighlight(userId: string, id: string) {
 export interface HighlightUpdate {
   type?: HighlightType
   note?: string | null
+  explanation?: string | null
+  explanationBy?: 'me' | 'claude' | null
   text?: string
   chapterId?: string | null
   tags?: string[]

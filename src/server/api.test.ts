@@ -1,5 +1,5 @@
 import fs from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
 const { insertUser } = await setupTestDb()
@@ -269,5 +269,36 @@ describe('translation endpoints', () => {
       translationBy: 'me',
     })
     expect((await res.json()).vocab).toMatchObject({ translation: 'tópicos', translationBy: 'me' })
+  })
+})
+
+describe('dictionary and explanations', () => {
+  it('looks up missing definitions on request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ status: 404 }, { status: 404 }))
+    )
+    try {
+      const res = await json('POST', '/api/vocab/define', {})
+      expect(res.status).toBe(200)
+      expect(await res.json()).toMatchObject({ defined: 0 })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('saves an explanation on a highlight and counts missing ones per book', async () => {
+    const { books } = await (await call('/api/books')).json()
+    const before = (await (await call(`/api/books/${books[0].id}`)).json()).book.missing
+    const { items } = await (
+      await call(`/api/highlights?bookId=${books[0].id}&type=quote&missingExplanation=true`)
+    ).json()
+    const res = await json('PATCH', `/api/highlights/${items[0].id}`, {
+      explanation: 'A wry reply.',
+      explanationBy: 'me',
+    })
+    expect((await res.json()).highlight).toMatchObject({ explanation: 'A wry reply.' })
+    const after = (await (await call(`/api/books/${books[0].id}`)).json()).book.missing
+    expect(after.explanations).toBe(before.explanations - 1)
   })
 })

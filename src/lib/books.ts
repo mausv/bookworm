@@ -62,9 +62,25 @@ export function getBook(userId: string, id: string) {
     .from(loreEntry)
     .where(eq(loreEntry.bookId, id))
     .get()
+  const missing = db
+    .select({
+      definitions: sql<number>`(
+        select count(*) from vocab_entry v where v.book_id = ${id}
+        and (v.definition is null or v.definition = '')
+        and exists (select 1 from highlight h where h.vocab_id = v.id and h.type = 'vocab')
+      )`,
+      explanations: sql<number>`(
+        select count(*) from highlight h where h.book_id = ${id} and h.type = 'quote'
+        and (h.explanation is null or h.explanation = '')
+      )`,
+    })
+    .from(book)
+    .where(eq(book.id, id))
+    .get()
   return {
     ...found,
     counts: total,
+    missing: { definitions: missing?.definitions ?? 0, explanations: missing?.explanations ?? 0 },
     loreEntries: lore?.count ?? 0,
     chapters,
     unchaptered: counts.get(null) ?? emptyCounts(),

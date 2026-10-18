@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  DEFINITION_SOURCES,
   HIGHLIGHT_TYPES,
   LORE_KINDS,
   SOURCES,
@@ -29,6 +30,8 @@ export const highlightUpdateSchema = z
   .object({
     type: highlightType,
     note: optionalText,
+    explanation: optionalText,
+    explanationBy: z.enum(['me', 'claude']).nullable(),
     text: z.string().trim().min(1).max(20000),
     chapterId: id.nullable(),
     tags,
@@ -67,7 +70,7 @@ export const vocabUpdateSchema = z
     language: z.string().trim().max(20).nullable(),
     example: optionalText,
     status: vocabStatus,
-    definitionBy: z.enum(['me', 'claude']).nullable(),
+    definitionBy: z.enum(DEFINITION_SOURCES).nullable(),
     translation: z.string().trim().max(500).nullable(),
     translationBy: z.enum(TRANSLATION_SOURCES).nullable(),
   })
