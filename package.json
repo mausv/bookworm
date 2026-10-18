@@ -7,7 +7,7 @@
     "dev": "pnpm run \"/^dev:/\"",
     "dev:server": "tsx watch --env-file-if-exists=.env src/server/main.ts",
     "dev:web": "vite",
-    "build": "vite build && vite build --ssr src/server/main.ts --outDir dist/server",
+    "build": "vite build && vite build --ssr",
     "start": "node dist/server/main.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
