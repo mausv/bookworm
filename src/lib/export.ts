@@ -210,7 +210,7 @@ export function jsonDump(userId: string) {
       ...h,
       tags: tags.filter((t) => t.highlightId === h.id).map((t) => t.tag),
     })),
-    vocab: db.select().from(vocabEntry).where(inArray(vocabEntry.highlightId, highlightIds)).all(),
+    vocab: db.select().from(vocabEntry).where(inArray(vocabEntry.bookId, bookIds)).all(),
     lore: lore.map((e) => ({
       ...e,
       highlightIds: loreLinks.filter((l) => l.loreId === e.id).map((l) => l.highlightId),

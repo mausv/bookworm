@@ -1,5 +1,13 @@
 import { relations, sql } from 'drizzle-orm'
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import {
+  type AnySQLiteColumn,
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { HIGHLIGHT_TYPES, LORE_KINDS, SOURCES, VOCAB_STATUSES } from '@/shared/types'
 
 const nowMs = sql`(cast(unixepoch('subsecond') * 1000 as integer))`
@@ -334,6 +342,9 @@ export const highlight = sqliteTable(
     page: text('page'),
     cfi: text('cfi'),
     note: text('note'),
+    vocabId: text('vocab_id').references((): AnySQLiteColumn => vocabEntry.id, {
+      onDelete: 'set null',
+    }),
     highlightedAt: integer('highlighted_at', { mode: 'timestamp_ms' }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -342,6 +353,7 @@ export const highlight = sqliteTable(
     uniqueIndex('highlight_book_dedup_uidx').on(table.bookId, table.dedupKey),
     index('highlight_book_type_idx').on(table.bookId, table.type),
     index('highlight_chapter_idx').on(table.chapterId),
+    index('highlight_vocab_idx').on(table.vocabId),
     index('highlight_created_idx').on(table.createdAt),
   ]
 )
@@ -360,22 +372,26 @@ export const highlightTag = sqliteTable(
   ]
 )
 
-export const vocabEntry = sqliteTable('vocab_entry', {
-  id: id(),
-  highlightId: text('highlight_id')
-    .notNull()
-    .unique()
-    .references(() => highlight.id, { onDelete: 'cascade' }),
-  term: text('term').notNull(),
-  definition: text('definition'),
-  partOfSpeech: text('part_of_speech'),
-  language: text('language'),
-  example: text('example'),
-  status: text('status', { enum: VOCAB_STATUSES }).default('new').notNull(),
-  definitionBy: text('definition_by', { enum: ['me', 'claude'] }),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-})
+export const vocabEntry = sqliteTable(
+  'vocab_entry',
+  {
+    id: id(),
+    bookId: text('book_id')
+      .notNull()
+      .references(() => book.id, { onDelete: 'cascade' }),
+    term: text('term').notNull(),
+    termKey: text('term_key').notNull(),
+    definition: text('definition'),
+    partOfSpeech: text('part_of_speech'),
+    language: text('language'),
+    example: text('example'),
+    status: text('status', { enum: VOCAB_STATUSES }).default('new').notNull(),
+    definitionBy: text('definition_by', { enum: ['me', 'claude'] }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [uniqueIndex('vocab_entry_book_term_uidx').on(table.bookId, table.termKey)]
+)
 
 export const loreEntry = sqliteTable(
   'lore_entry',
@@ -519,6 +535,7 @@ export const bookRelations = relations(book, ({ one, many }) => ({
   chapters: many(chapter),
   highlights: many(highlight),
   loreEntries: many(loreEntry),
+  vocabEntries: many(vocabEntry),
 }))
 
 export const chapterRelations = relations(chapter, ({ one, many }) => ({
@@ -530,7 +547,7 @@ export const highlightRelations = relations(highlight, ({ one, many }) => ({
   book: one(book, { fields: [highlight.bookId], references: [book.id] }),
   chapter: one(chapter, { fields: [highlight.chapterId], references: [chapter.id] }),
   tags: many(highlightTag),
-  vocab: one(vocabEntry, { fields: [highlight.id], references: [vocabEntry.highlightId] }),
+  vocab: one(vocabEntry, { fields: [highlight.vocabId], references: [vocabEntry.id] }),
   lore: many(loreHighlight),
 }))
 
@@ -539,7 +556,8 @@ export const highlightTagRelations = relations(highlightTag, ({ one }) => ({
 }))
 
 export const vocabEntryRelations = relations(vocabEntry, ({ one, many }) => ({
-  highlight: one(highlight, { fields: [vocabEntry.highlightId], references: [highlight.id] }),
+  book: one(book, { fields: [vocabEntry.bookId], references: [book.id] }),
+  highlights: many(highlight),
   attempts: many(quizAttempt),
 }))
 

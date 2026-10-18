@@ -1,7 +1,7 @@
 export const HIGHLIGHT_TYPES = ['vocab', 'quote', 'lore', 'unclassified'] as const
 export type HighlightType = (typeof HIGHLIGHT_TYPES)[number]
 
-export const SOURCES = ['kindle-html', 'clippings', 'readest'] as const
+export const SOURCES = ['kindle-html', 'clippings', 'readest', 'manual'] as const
 export type Source = (typeof SOURCES)[number]
 
 export const VOCAB_STATUSES = ['new', 'learning', 'known'] as const

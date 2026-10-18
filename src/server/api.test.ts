@@ -226,3 +226,32 @@ describe('isolation between users', () => {
     expect(results[0].books[0].bookId).not.toBe(mine.id)
   })
 })
+
+describe('POST /api/highlights', () => {
+  it('adds a highlight to an existing book', async () => {
+    const { books } = await (await call('/api/books')).json()
+    const res = await json('POST', '/api/highlights', {
+      bookId: books[0].id,
+      text: 'A hand-typed line worth keeping.',
+      type: 'quote',
+      page: '42',
+    })
+    expect(res.status).toBe(200)
+    expect((await res.json()).highlight).toMatchObject({
+      source: 'manual',
+      page: '42',
+      type: 'quote',
+    })
+  })
+
+  it('requires exactly one of bookId or book', async () => {
+    expect((await json('POST', '/api/highlights', { text: 'x', type: 'quote' })).status).toBe(400)
+    const both = await json('POST', '/api/highlights', {
+      bookId: 'b',
+      book: { title: 'T' },
+      text: 'x',
+      type: 'quote',
+    })
+    expect(both.status).toBe(400)
+  })
+})

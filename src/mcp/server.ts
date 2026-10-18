@@ -5,6 +5,7 @@ import { version } from '../../package.json'
 import { getBook, listBooks } from '@/lib/books'
 import { bookMarkdown } from '@/lib/export'
 import { addNote, addTags, classifyHighlights, listHighlights } from '@/lib/highlights'
+import { addHighlight } from '@/lib/import'
 import { listLore, upsertLore } from '@/lib/lore'
 import { highlightType, id, loreKind, tags, vocabStatus } from '@/lib/validation'
 import { listVocab, setVocabStatus, updateVocab } from '@/lib/vocab'
@@ -181,6 +182,7 @@ export function createMcpServer(userId: string) {
             status: v.status,
             definitionBy: v.definitionBy,
             context: v.context.trim() === v.term ? undefined : v.context,
+            seen: v.occurrences > 1 ? v.occurrences : undefined,
             note: v.note === v.definition ? undefined : v.note,
             chapter: v.chapter,
             book: book_id ? undefined : v.bookTitle,
@@ -279,6 +281,46 @@ export function createMcpServer(userId: string) {
       annotations: write,
     },
     ({ highlight_ids, type }) => reply(classifyHighlights(userId, highlight_ids, type))
+  )
+
+  server.registerTool(
+    'add_highlight',
+    {
+      description:
+        'Add a highlight by hand, e.g. a word the user read on paper. Give book_id for an existing book, or book_title (and author, language) to create or reuse one by title and author. Vocab highlights get or join the vocab entry for that word in the book; a note on a vocab highlight becomes its definition if it has none.',
+      inputSchema: {
+        book_id: bookId.optional(),
+        book_title: z.string().trim().min(1).max(500).optional(),
+        author: z.string().trim().max(500).optional(),
+        language: z
+          .string()
+          .trim()
+          .min(2)
+          .max(20)
+          .optional()
+          .describe('Book language, e.g. en or es'),
+        text: z.string().trim().min(1).max(20000),
+        type: highlightType,
+        chapter: z.string().trim().max(500).optional().describe('Chapter title; created if new'),
+        page: z.string().trim().max(50).optional(),
+        note: z.string().trim().max(5000).optional(),
+      },
+      annotations: write,
+    },
+    ({ book_id, book_title, author, language, text, type, chapter, page, note }) => {
+      if (!book_id && !book_title) return reply({ error: 'Give book_id or book_title' })
+      const result = addHighlight(userId, {
+        bookId: book_id,
+        book: book_id ? undefined : { title: book_title ?? '', author, language },
+        text,
+        type,
+        chapter,
+        page,
+        note,
+      })
+      if (!('highlight' in result) || !result.highlight) return reply(result)
+      return reply({ created: result.created, highlight: highlightItem(result.highlight, true) })
+    }
   )
 
   server.registerTool(

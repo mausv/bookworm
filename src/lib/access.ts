@@ -28,8 +28,7 @@ export function ownedVocabIds(userId: string, ids: string[]) {
   return db
     .select({ id: vocabEntry.id })
     .from(vocabEntry)
-    .innerJoin(highlight, eq(highlight.id, vocabEntry.highlightId))
-    .innerJoin(book, eq(book.id, highlight.bookId))
+    .innerJoin(book, eq(book.id, vocabEntry.bookId))
     .where(and(eq(book.userId, userId), inArray(vocabEntry.id, ids)))
     .all()
     .map((r) => r.id)

@@ -5,7 +5,7 @@ import { setupTestDb } from '@/test/db'
 
 const { db, schema, insertUser } = await setupTestDb()
 const userId = insertUser().id
-const { importContent } = await import('./import')
+const { addHighlight, importContent } = await import('./import')
 const { setColorMapping } = await import('./colors')
 
 const fixture = (name: string) =>
@@ -53,7 +53,7 @@ describe('importContent', () => {
     const vocab = db
       .select()
       .from(schema.vocabEntry)
-      .where(eq(schema.vocabEntry.highlightId, hale?.id ?? ''))
+      .where(eq(schema.vocabEntry.id, hale?.vocabId ?? ''))
       .get()
     expect(vocab).toMatchObject({
       term: 'hale',
@@ -64,7 +64,7 @@ describe('importContent', () => {
     const tropes = db
       .select()
       .from(schema.vocabEntry)
-      .where(eq(schema.vocabEntry.highlightId, highlightByText('tropes,')?.id ?? ''))
+      .where(eq(schema.vocabEntry.id, highlightByText('tropes,')?.vocabId ?? ''))
       .get()
     expect(tropes).toMatchObject({ term: 'tropes', definition: null, definitionBy: null })
   })
@@ -136,5 +136,53 @@ describe('Readest import', () => {
     expect(highlightByText('highstorm')).toMatchObject({ type: 'quote', color: '#ff8800' })
     expect(highlightByText('chasmfiend')?.type).toBe('unclassified')
     expect(importContent(userId, json)).toMatchObject({ books: [{ added: 0, unchanged: 5 }] })
+  })
+})
+
+describe('addHighlight', () => {
+  it('creates a book with its language and a chapter for a hand-added word', () => {
+    const result = addHighlight(userId, {
+      book: { title: 'Pedro Páramo', author: 'Juan Rulfo', language: 'es' },
+      text: 'tolvanera',
+      type: 'vocab',
+      chapter: 'Capítulo 1',
+      note: 'remolino de polvo',
+    })
+    expect(result).toMatchObject({
+      created: true,
+      highlight: { text: 'tolvanera', type: 'vocab', chapter: 'Capítulo 1', source: 'manual' },
+    })
+    const book = db.select().from(schema.book).where(eq(schema.book.title, 'Pedro Páramo')).get()
+    expect(book?.language).toBe('es')
+    const vocab = db
+      .select()
+      .from(schema.vocabEntry)
+      .where(eq(schema.vocabEntry.term, 'tolvanera'))
+      .get()
+    expect(vocab).toMatchObject({
+      definition: 'remolino de polvo',
+      definitionBy: 'me',
+      language: 'es',
+    })
+  })
+
+  it('reuses the book by title and author, and returns an existing identical highlight', () => {
+    const again = addHighlight(userId, {
+      book: { title: 'pedro páramo', author: 'Juan Rulfo' },
+      text: 'tolvanera',
+      type: 'vocab',
+    })
+    expect(again).toMatchObject({ created: false })
+    expect(
+      db.select().from(schema.book).where(eq(schema.book.title, 'Pedro Páramo')).all()
+    ).toHaveLength(1)
+  })
+
+  it("refuses another user's book", () => {
+    const stranger = insertUser().id
+    const book = db.select().from(schema.book).where(eq(schema.book.title, 'Pedro Páramo')).get()
+    expect(addHighlight(stranger, { bookId: book?.id, text: 'x', type: 'quote' })).toEqual({
+      error: 'Book not found',
+    })
   })
 })

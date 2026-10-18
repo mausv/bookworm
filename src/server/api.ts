@@ -16,7 +16,7 @@ import {
   updateHighlight,
 } from '@/lib/highlights'
 import { bookMarkdown, jsonDump, vocabTsv } from '@/lib/export'
-import { importContent } from '@/lib/import'
+import { addHighlight, importContent } from '@/lib/import'
 import { deleteLore, listLore, unlinkLoreHighlight, updateLore, upsertLore } from '@/lib/lore'
 import { listConnectedClients, revokeConnectedClient } from '@/lib/oauth'
 import { answerQuiz, buildQuiz } from '@/lib/quiz'
@@ -31,6 +31,7 @@ import {
   loreInputSchema,
   loreKind,
   loreUpdateSchema,
+  manualHighlightSchema,
   quizAnswerSchema,
   quizMode,
   source,
@@ -125,6 +126,11 @@ export const api = new Hono<Env>()
     return respond(c, updateHighlight(c.get('userId'), c.req.param('id'), parsed.data))
   })
   .delete('/highlights/:id', (c) => respond(c, deleteHighlight(c.get('userId'), c.req.param('id'))))
+  .post('/highlights', async (c) => {
+    const parsed = await parseJson(c, manualHighlightSchema)
+    if (!parsed.success) return invalid(c, parsed.error)
+    return respond(c, addHighlight(c.get('userId'), parsed.data))
+  })
   .post('/highlights/classify', async (c) => {
     const parsed = await parseJson(c, classifySchema)
     if (!parsed.success) return invalid(c, parsed.error)

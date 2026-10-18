@@ -1,0 +1,1 @@
+ALTER TABLE `vocab_entry` DROP COLUMN `highlight_id`;

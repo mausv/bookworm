@@ -1,29 +1,50 @@
-import { and, asc, eq, inArray, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import { book, chapter, highlight, vocabEntry } from '@/db/schema'
-import { vocabTerm } from '@/importers/text'
+import { normalizeText, vocabTerm } from '@/importers/text'
 import type { VocabStatus } from '@/shared/types'
-import { chapterCondition, ownedVocabIds } from './access'
+import { ownedVocabIds } from './access'
 import { page, type PageInput } from './page'
 
+export function termKey(term: string) {
+  return normalizeText(term)
+}
+
+// Repeated highlights of the same word in a book share one entry; the first note seen becomes
+// the definition if the entry has none yet.
 export function ensureVocab(highlightId: string) {
   const row = db
-    .select({ text: highlight.text, note: highlight.note, language: book.language })
+    .select({
+      text: highlight.text,
+      note: highlight.note,
+      vocabId: highlight.vocabId,
+      bookId: highlight.bookId,
+      language: book.language,
+    })
     .from(highlight)
     .innerJoin(book, eq(book.id, highlight.bookId))
     .where(eq(highlight.id, highlightId))
     .get()
-  if (!row) return
+  if (!row || row.vocabId) return
+  const term = vocabTerm(row.text)
+  const key = termKey(term)
   db.insert(vocabEntry)
-    .values({
-      highlightId,
-      term: vocabTerm(row.text),
-      definition: row.note,
-      definitionBy: row.note ? 'me' : null,
-      language: row.language,
-    })
+    .values({ bookId: row.bookId, term, termKey: key, language: row.language })
     .onConflictDoNothing()
     .run()
+  const entry = db
+    .select({ id: vocabEntry.id, definition: vocabEntry.definition })
+    .from(vocabEntry)
+    .where(and(eq(vocabEntry.bookId, row.bookId), eq(vocabEntry.termKey, key)))
+    .get()
+  if (!entry) return
+  if (!entry.definition && row.note) {
+    db.update(vocabEntry)
+      .set({ definition: row.note, definitionBy: 'me' })
+      .where(eq(vocabEntry.id, entry.id))
+      .run()
+  }
+  db.update(highlight).set({ vocabId: entry.id }).where(eq(highlight.id, highlightId)).run()
 }
 
 export interface VocabFilter extends PageInput {
@@ -33,9 +54,14 @@ export interface VocabFilter extends PageInput {
   missingDefinition?: boolean
 }
 
+const firstOccurrence = sql`(
+  select h2.id from highlight h2 left join chapter c2 on c2.id = h2.chapter_id
+  where h2.vocab_id = ${vocabEntry.id} and h2.type = 'vocab'
+  order by c2.position is null, c2.position, h2.loc_start, h2.created_at limit 1
+)`
+
 export const vocabColumns = {
   id: vocabEntry.id,
-  highlightId: vocabEntry.highlightId,
   term: vocabEntry.term,
   definition: vocabEntry.definition,
   partOfSpeech: vocabEntry.partOfSpeech,
@@ -43,18 +69,29 @@ export const vocabColumns = {
   example: vocabEntry.example,
   status: vocabEntry.status,
   definitionBy: vocabEntry.definitionBy,
+  occurrences: sql<number>`(
+    select count(*) from highlight h3 where h3.vocab_id = ${vocabEntry.id} and h3.type = 'vocab'
+  )`,
   context: highlight.text,
   note: highlight.note,
-  bookId: highlight.bookId,
+  bookId: vocabEntry.bookId,
   bookTitle: book.title,
   chapterId: highlight.chapterId,
   chapter: chapter.title,
 }
 
 export function vocabConditions(userId: string, filter: VocabFilter) {
-  const conditions: SQL[] = [eq(book.userId, userId), eq(highlight.type, 'vocab')]
-  if (filter.bookId) conditions.push(eq(highlight.bookId, filter.bookId))
-  if (filter.chapterId) conditions.push(chapterCondition(filter.chapterId))
+  const conditions: SQL[] = [eq(book.userId, userId)]
+  if (filter.bookId) conditions.push(eq(vocabEntry.bookId, filter.bookId))
+  if (filter.chapterId) {
+    const inChapter =
+      filter.chapterId === 'none'
+        ? sql`h4.chapter_id is null`
+        : sql`h4.chapter_id = ${filter.chapterId}`
+    conditions.push(
+      sql`exists (select 1 from highlight h4 where h4.vocab_id = ${vocabEntry.id} and h4.type = 'vocab' and ${inChapter})`
+    )
+  }
   if (filter.status) conditions.push(eq(vocabEntry.status, filter.status))
   if (filter.missingDefinition) {
     conditions.push(sql`(${vocabEntry.definition} is null or ${vocabEntry.definition} = '')`)
@@ -66,8 +103,8 @@ export function selectVocab() {
   return db
     .select(vocabColumns)
     .from(vocabEntry)
-    .innerJoin(highlight, eq(highlight.id, vocabEntry.highlightId))
-    .innerJoin(book, eq(book.id, highlight.bookId))
+    .innerJoin(book, eq(book.id, vocabEntry.bookId))
+    .innerJoin(highlight, eq(highlight.id, firstOccurrence))
     .leftJoin(chapter, eq(chapter.id, highlight.chapterId))
 }
 
@@ -77,6 +114,7 @@ export function listVocab(userId: string, filter: VocabFilter = {}) {
       .where(vocabConditions(userId, filter))
       .orderBy(
         asc(book.title),
+        sql`${chapter.position} is null`,
         asc(chapter.position),
         asc(highlight.locStart),
         asc(vocabEntry.term)
@@ -88,9 +126,24 @@ export function listVocab(userId: string, filter: VocabFilter = {}) {
 }
 
 export function getVocab(userId: string, id: string) {
-  return selectVocab()
+  const entry = selectVocab()
     .where(and(eq(vocabEntry.id, id), eq(book.userId, userId)))
     .get()
+  if (!entry) return undefined
+  const contexts = db
+    .select({
+      highlightId: highlight.id,
+      text: highlight.text,
+      chapter: chapter.title,
+      locStart: highlight.locStart,
+      note: highlight.note,
+    })
+    .from(highlight)
+    .leftJoin(chapter, eq(chapter.id, highlight.chapterId))
+    .where(and(eq(highlight.vocabId, id), eq(highlight.type, 'vocab')))
+    .orderBy(sql`${chapter.position} is null`, asc(chapter.position), asc(highlight.locStart))
+    .all()
+  return { ...entry, contexts }
 }
 
 export type VocabUpdate = Partial<
@@ -111,8 +164,31 @@ export function setVocabStatus(userId: string, ids: string[], status: VocabStatu
   return { updated: changes }
 }
 
-export function updateVocab(userId: string, id: string, values: VocabUpdate) {
+export function updateVocab(userId: string, id: string, { term, ...values }: VocabUpdate) {
   if (!ownedVocabIds(userId, [id]).length) return { error: 'Vocab entry not found' }
-  db.update(vocabEntry).set(values).where(eq(vocabEntry.id, id)).run()
+  const renamed = term === undefined ? {} : { term, termKey: termKey(term) }
+  if (renamed.termKey !== undefined) {
+    const current = db
+      .select({ bookId: vocabEntry.bookId })
+      .from(vocabEntry)
+      .where(eq(vocabEntry.id, id))
+      .get()
+    const clash = db
+      .select({ id: vocabEntry.id })
+      .from(vocabEntry)
+      .where(
+        and(
+          eq(vocabEntry.bookId, current?.bookId ?? ''),
+          eq(vocabEntry.termKey, renamed.termKey),
+          ne(vocabEntry.id, id)
+        )
+      )
+      .get()
+    if (clash) return { error: `This book already has a vocab entry for "${term}"` }
+  }
+  db.update(vocabEntry)
+    .set({ ...values, ...renamed })
+    .where(eq(vocabEntry.id, id))
+    .run()
   return { vocab: getVocab(userId, id) }
 }

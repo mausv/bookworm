@@ -46,7 +46,14 @@ function enableWal(sqlite: Database.Database, timeoutMs: number) {
 export function openDatabase(file: string, migrationsFolder: string) {
   const sqlite = new Database(file, { timeout: 10_000 })
   enableWal(sqlite, 10_000)
-  sqlite.pragma('foreign_keys = ON')
+  // Migrations rebuild tables; with foreign keys on, dropping the old table would cascade deletes.
+  // The pragma is ignored inside a transaction, so it has to wrap the migration from outside.
+  sqlite.pragma('foreign_keys = OFF')
   migrate(sqlite, migrationsFolder)
+  sqlite.pragma('foreign_keys = ON')
+  const violations = sqlite.pragma('foreign_key_check')
+  if (Array.isArray(violations) && violations.length) {
+    throw new Error(`Foreign key violations after migration: ${JSON.stringify(violations)}`)
+  }
   return sqlite
 }

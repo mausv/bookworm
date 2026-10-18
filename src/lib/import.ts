@@ -6,8 +6,10 @@ import { kindleHtml } from '@/importers/kindle-html'
 import { readest } from '@/importers/readest'
 import { normalizeText } from '@/importers/text'
 import type { Importer, ParsedBook, ParsedHighlight } from '@/importers/types'
-import type { Source } from '@/shared/types'
+import type { HighlightType, Source } from '@/shared/types'
+import { ownsBook } from './access'
 import { type ColorMap, getColorMap, typeForColor } from './colors'
+import { getHighlight } from './highlights'
 import { ensureVocab } from './vocab'
 
 export const importers: Importer[] = [kindleHtml, clippings, readest]
@@ -28,7 +30,7 @@ export function dedupKey(h: Pick<ParsedHighlight, 'text' | 'locStart' | 'cfi' | 
   return `${normalizeText(h.text)}@${h.locStart ?? h.cfi ?? h.page ?? ''}`
 }
 
-function upsertBook(userId: string, parsed: ParsedBook) {
+function upsertBook(userId: string, parsed: Omit<ParsedBook, 'highlights'>, language?: string) {
   const matchKey = bookMatchKey(parsed.title, parsed.author)
   return (
     db
@@ -38,7 +40,7 @@ function upsertBook(userId: string, parsed: ParsedBook) {
       .get() ??
     db
       .insert(book)
-      .values({ userId, title: parsed.title, author: parsed.author, matchKey })
+      .values({ userId, title: parsed.title, author: parsed.author, matchKey, language })
       .returning()
       .get()
   )
@@ -142,4 +144,54 @@ export function importContent(userId: string, content: string, source?: Source) 
       .filter((b) => b.highlights.length)
       .map((b) => importBook(userId, b, importer.source, colors)),
   }))
+}
+
+export interface ManualHighlight {
+  bookId?: string
+  book?: { title: string; author?: string | null; language?: string }
+  text: string
+  type: HighlightType
+  chapter?: string | null
+  page?: string | null
+  note?: string | null
+}
+
+export function addHighlight(userId: string, input: ManualHighlight) {
+  if (input.bookId && !ownsBook(userId, input.bookId)) return { error: 'Book not found' }
+  if (!input.bookId && !input.book) return { error: 'A book is required' }
+  return db.transaction(() => {
+    const bookId =
+      input.bookId ??
+      upsertBook(
+        userId,
+        { title: input.book?.title ?? '', author: input.book?.author ?? undefined },
+        input.book?.language
+      ).id
+    const chapterId = input.chapter ? chapterIds(bookId, [input.chapter]).get(input.chapter) : null
+    const key = dedupKey({ text: input.text, page: input.page ?? undefined })
+    const existing = db
+      .select({ id: highlight.id })
+      .from(highlight)
+      .where(and(eq(highlight.bookId, bookId), eq(highlight.dedupKey, key)))
+      .get()
+    const id =
+      existing?.id ??
+      db
+        .insert(highlight)
+        .values({
+          bookId,
+          chapterId,
+          text: input.text,
+          dedupKey: key,
+          type: input.type,
+          source: 'manual',
+          page: input.page,
+          note: input.note,
+          highlightedAt: new Date(),
+        })
+        .returning({ id: highlight.id })
+        .get().id
+    if (!existing && input.type === 'vocab') ensureVocab(id)
+    return { highlight: getHighlight(userId, id), created: !existing }
+  })
 }

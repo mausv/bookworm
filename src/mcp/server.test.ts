@@ -257,3 +257,26 @@ describe('write tools', () => {
     expect(result.content).toEqual([{ type: 'text', text: expect.stringContaining('# Mistborn') }])
   })
 })
+
+describe('add_highlight', () => {
+  it('adds a word by hand and joins the existing vocab entry when repeated', async () => {
+    const added = await callTool(
+      'add_highlight',
+      { book_id: bookId, text: 'hale', type: 'vocab', chapter: 'Chapter 12', page: '210' },
+      z.object({ created: z.boolean(), highlight: z.looseObject({ chapter: z.string() }) })
+    )
+    expect(added).toMatchObject({ created: true, highlight: { chapter: 'Chapter 12' } })
+    const { items } = await callTool('get_vocab', { book_id: bookId, limit: 200 }, vocabList)
+    expect(items.filter((v) => v.term === 'hale')).toEqual([
+      expect.objectContaining({ seen: 2, definition: 'healthy, of sound mind' }),
+    ])
+  })
+
+  it('needs a book', async () => {
+    const result = await client.callTool({
+      name: 'add_highlight',
+      arguments: { text: 'x', type: 'quote' },
+    })
+    expect(result.isError).toBe(true)
+  })
+})

@@ -9,6 +9,7 @@ export const DEFAULT_COLOR_MAP: Record<Source, ColorMap> = {
   'kindle-html': { yellow: 'vocab', orange: 'quote', aqua: 'lore', blue: 'lore' },
   clippings: {},
   readest: { yellow: 'vocab', red: 'quote', '#ff8800': 'quote', blue: 'lore' },
+  manual: {},
 }
 
 export function getColorMap(userId: string, source: Source): ColorMap {

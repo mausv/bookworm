@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
-import { book, chapter, highlight, highlightTag, vocabEntry } from '@/db/schema'
+import { book, chapter, highlight, highlightTag } from '@/db/schema'
 import { suggestType } from '@/importers/text'
 import type { HighlightType } from '@/shared/types'
 import { chapterCondition, ownedHighlightIds } from './access'
@@ -31,7 +31,7 @@ const columns = {
   page: highlight.page,
   highlightedAt: highlight.highlightedAt,
   createdAt: highlight.createdAt,
-  vocabId: vocabEntry.id,
+  vocabId: highlight.vocabId,
 }
 
 function escapeLike(value: string) {
@@ -56,7 +56,6 @@ function select() {
     .from(highlight)
     .innerJoin(book, eq(book.id, highlight.bookId))
     .leftJoin(chapter, eq(chapter.id, highlight.chapterId))
-    .leftJoin(vocabEntry, eq(vocabEntry.highlightId, highlight.id))
 }
 
 export function listHighlights(userId: string, filter: HighlightFilter = {}) {

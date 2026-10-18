@@ -77,3 +77,47 @@ describe('other users', () => {
     expect(setVocabStatus(stranger, [entry.id], 'known')).toEqual({ updated: 0 })
   })
 })
+
+describe('repeated words', () => {
+  it('shares one entry per book across repeated highlights', () => {
+    const first = insertHighlight(book.id, { text: 'Cántaro.', type: 'vocab', locStart: 900 })
+    ensureVocab(first.id)
+    const entry = listVocab(userId, { bookId: book.id }).items.find((v) => v.term === 'cántaro')
+    expect(entry).toMatchObject({ occurrences: 2, definition: 'jug' })
+    expect(getVocab(userId, entry?.id ?? '')?.contexts.map((c) => c.text)).toEqual([
+      'cántaro',
+      'Cántaro.',
+    ])
+  })
+
+  it('keeps the same word in another book separate', () => {
+    const other = insertBook(userId, { title: 'Pedro Páramo', language: 'es' })
+    const h = insertHighlight(other.id, { text: 'cántaro', type: 'vocab', note: 'vasija' })
+    ensureVocab(h.id)
+    expect(listVocab(userId, { bookId: other.id }).items).toEqual([
+      expect.objectContaining({ term: 'cántaro', definition: 'vasija', occurrences: 1 }),
+    ])
+  })
+
+  it('fills a missing definition from a later note', () => {
+    const a = insertHighlight(book.id, { text: 'zaguán', type: 'vocab', locStart: 10 })
+    ensureVocab(a.id)
+    const b = insertHighlight(book.id, {
+      text: 'zaguán',
+      type: 'vocab',
+      locStart: 20,
+      note: 'hallway',
+    })
+    ensureVocab(b.id)
+    expect(
+      listVocab(userId, { bookId: book.id }).items.find((v) => v.term === 'zaguán')
+    ).toMatchObject({ definition: 'hallway', definitionBy: 'me', occurrences: 2 })
+  })
+
+  it('refuses to rename a term onto another entry of the same book', () => {
+    const zaguan = listVocab(userId, { bookId: book.id }).items.find((v) => v.term === 'zaguán')
+    expect(updateVocab(userId, zaguan?.id ?? '', { term: 'Cántaro' })).toEqual({
+      error: 'This book already has a vocab entry for "Cántaro"',
+    })
+  })
+})

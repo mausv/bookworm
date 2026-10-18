@@ -5,7 +5,8 @@ import { setupTestDb } from '@/test/db'
 const { db, schema, insertBook, insertHighlight, insertUser } = await setupTestDb()
 const userId = insertUser().id
 const { answerQuiz, buildQuiz, editDistance, normalizeAnswer } = await import('./quiz')
-const { ensureVocab, listVocab, updateVocab } = await import('./vocab')
+const { ensureVocab, updateVocab } = await import('./vocab')
+const { getHighlight } = await import('./highlights')
 
 const book = insertBook(userId, { title: 'Mistborn' })
 const other = insertBook(userId, { title: 'Elantris' })
@@ -18,10 +19,10 @@ const chapter = db
 function addWord(bookId: string, text: string, definition: string | null, chapterId?: string) {
   const h = insertHighlight(bookId, { text, type: 'vocab', chapterId })
   ensureVocab(h.id)
-  const entry = listVocab(userId, { bookId, limit: 200 }).items.find((v) => v.highlightId === h.id)
-  if (!entry) throw new Error('vocab not created')
-  updateVocab(userId, entry.id, { definition })
-  return entry.id
+  const vocabId = getHighlight(userId, h.id)?.vocabId
+  if (!vocabId) throw new Error('vocab not created')
+  updateVocab(userId, vocabId, { definition })
+  return vocabId
 }
 
 const ruddy = addWord(book.id, 'His ruddy face', 'reddish, healthy-looking', chapter.id)

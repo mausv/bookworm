@@ -8,13 +8,14 @@ export const vocabStatus = z.enum(VOCAB_STATUSES)
 export const loreKind = z.enum(LORE_KINDS)
 export const tags = z.array(z.string().trim().min(1).max(50)).max(50)
 
+const bookLanguage = z.string().trim().min(2).max(20)
 const optionalText = z.string().trim().max(5000).nullable()
 
 export const bookUpdateSchema = z
   .object({
     title: z.string().trim().min(1).max(500),
     author: z.string().trim().max(500).nullable(),
-    language: z.string().trim().min(2).max(20),
+    language: bookLanguage,
   })
   .partial()
 
@@ -27,6 +28,26 @@ export const highlightUpdateSchema = z
     tags,
   })
   .partial()
+
+export const manualHighlightSchema = z
+  .object({
+    bookId: id.optional(),
+    book: z
+      .object({
+        title: z.string().trim().min(1).max(500),
+        author: z.string().trim().max(500).nullish(),
+        language: bookLanguage.optional(),
+      })
+      .optional(),
+    text: z.string().trim().min(1).max(20000),
+    type: highlightType,
+    chapter: z.string().trim().max(500).nullish(),
+    page: z.string().trim().max(50).nullish(),
+    note: optionalText.optional(),
+  })
+  .refine((v) => Boolean(v.bookId) !== Boolean(v.book), {
+    message: 'Give either bookId or book',
+  })
 
 export const classifySchema = z.object({ ids: z.array(id).min(1).max(500), type: highlightType })
 
