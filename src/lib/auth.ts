@@ -5,6 +5,7 @@ import { createAuthMiddleware } from 'better-auth/api'
 import { jwt } from 'better-auth/plugins'
 import { db } from '@/db'
 import * as schema from '@/db/schema'
+import { ensureInbox } from './inbox'
 import { assertValidInviteCode } from './invite-code'
 
 const baseURL = process.env.BETTER_AUTH_URL
@@ -18,6 +19,9 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true },
   session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
   advanced: { database: { generateId: 'uuid' } },
+  databaseHooks: {
+    user: { create: { after: async (created) => ensureInbox(created.email) } },
+  },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path === '/sign-up/email') {

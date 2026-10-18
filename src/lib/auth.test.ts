@@ -1,7 +1,9 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
-await setupTestDb()
+const { dataDir } = await setupTestDb()
 vi.stubEnv('INVITE_CODE', 'open-sesame')
 const { auth } = await import('./auth')
 
@@ -26,5 +28,9 @@ describe('invite-only sign-up', () => {
     expect(first.status).toBe(200)
     expect(first.headers.get('set-cookie')).toContain('better-auth.session_token=')
     expect((await signUp('second@example.com', 'open-sesame')).status).toBe(200)
+  })
+
+  it('creates an import inbox for each new user', () => {
+    expect(fs.existsSync(path.join(dataDir, 'inbox', 'first@example.com'))).toBe(true)
   })
 })
