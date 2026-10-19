@@ -56,4 +56,5 @@ export interface QuizAnswer {
   close: boolean
   expected: string
   status: VocabStatus
+  examples: string[]
 }

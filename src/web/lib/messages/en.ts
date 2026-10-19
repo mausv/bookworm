@@ -156,7 +156,7 @@ export const en = {
   'missing.copyPrompt': 'Copy prompt for Claude',
   'missing.copied': 'Prompt copied. Paste it into Claude with Bookworm connected.',
   'missing.promptDefinitions':
-    'Using Bookworm, define the vocab words in "{title}" that are missing a definition ({count} right now). Use the sentence each one came from, explain phrases and idioms in plain words, and add the English↔Spanish translation too.',
+    'Using Bookworm, define the vocab words in "{title}" that are missing a definition ({count} right now). Most entries are only the highlighted word, so pick the sense that fits the book and its chapter; explain phrases and idioms in plain words, write two short example sentences of your own for each, and add the English↔Spanish translation too. Work in batches of 50.',
   'missing.promptExplanations':
     'Using Bookworm, explain the quotes in "{title}" that have no explanation yet ({count} right now): what each one means in the story, in one to three sentences.',
   'highlight.delete': 'Delete highlight',

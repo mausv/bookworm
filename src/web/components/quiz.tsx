@@ -250,6 +250,11 @@ function QuizRound({
               <span className="font-serif text-lg">{result.expected}</span>
             </p>
           )}
+          {result.examples.map((example) => (
+            <p key={example} className="font-serif text-base/relaxed text-muted-foreground italic">
+              {example}
+            </p>
+          ))}
           <Button className="w-full" size="lg" onClick={next} autoFocus>
             {index + 1 < questions.length ? t('quiz.next') : t('quiz.seeScore')}
           </Button>

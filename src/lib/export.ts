@@ -94,7 +94,8 @@ export function bookMarkdown(userId: string, bookId: string) {
         const translation = v.translation ? ` (${v.translation})` : ''
         lines.push(`- **${v.term}**${pos}${translation}${v.definition ? ` — ${v.definition}` : ''}`)
         if (v.context.trim() !== v.term) lines.push(`  - ${v.context.replace(/\n/g, ' ')}`)
-        if (v.example) lines.push(`  - e.g. ${v.example}`)
+        for (const example of v.example?.split(/\r?\n/).filter((e) => e.trim()) ?? [])
+          lines.push(`  - e.g. ${example.trim()}`)
       }
       lines.push('')
     }

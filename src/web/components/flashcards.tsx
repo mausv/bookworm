@@ -162,7 +162,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
             )}
             <Context text={card.context} term={card.term} />
             {card.example && (
-              <p className="font-serif text-base/relaxed text-muted-foreground italic">
+              <p className="font-serif text-base/relaxed whitespace-pre-line text-muted-foreground italic">
                 {card.example}
               </p>
             )}

@@ -261,7 +261,7 @@ export function createMcpServer(userId: string) {
     'add_definitions',
     {
       description:
-        'Write definitions for many vocab entries at once (up to 100 per call; marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep each short and dictionary-style, for the sense used in the highlight context. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Optionally trim a term down to the word itself and add the translation into the other of English/Spanish. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context. Work through get_vocab with missing_definition: true page by page.',
+        'Write definitions for many vocab entries at once (up to 100 per call; marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep each short and dictionary-style, for the sense used in the book. Highlights usually contain only the word itself (context is present only when the user highlighted more), so use the book, chapter and your knowledge of it to pick the sense. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Add two short example sentences of your own (not quotes from the book) showing how each word or phrase is used. Optionally trim a term down to the word itself and add the translation into the other of English/Spanish. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context. Work through get_vocab with missing_definition: true in pages of about 50, one call at a time.',
       inputSchema: {
         entries: z
           .array(
@@ -269,7 +269,14 @@ export function createMcpServer(userId: string) {
               vocab_id: id.describe('Vocab entry id from get_vocab'),
               definition: z.string().trim().min(1).max(2000),
               part_of_speech: z.string().trim().max(50).optional(),
-              example: z.string().trim().max(2000).optional().describe('A short example sentence'),
+              example: z
+                .string()
+                .trim()
+                .max(2000)
+                .optional()
+                .describe(
+                  'Two short example sentences of your own using the term in this sense, one per line'
+                ),
               term: z
                 .string()
                 .trim()
@@ -321,7 +328,7 @@ export function createMcpServer(userId: string) {
     'set_translations',
     {
       description:
-        'Set translations for several vocab entries at once (marked as added by Claude). Translate English words into Spanish and Spanish words into English, choosing the sense used in the highlight context; replace dictionary translations when they miss that sense.',
+        'Set translations for several vocab entries at once (marked as added by Claude). Translate English words into Spanish and Spanish words into English, choosing the sense used in the book; replace dictionary translations when they miss that sense.',
       inputSchema: {
         translations: z
           .array(z.object({ vocab_id: id, translation: z.string().trim().min(1).max(500) }))

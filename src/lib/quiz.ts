@@ -58,6 +58,13 @@ function maskTerm(context: string, term: string) {
   return context.replace(new RegExp(escaped, 'giu'), '____')
 }
 
+function exampleLines(example: string | null) {
+  return (example ?? '')
+    .split(/\r?\n/)
+    .map((e) => e.trim())
+    .filter(Boolean)
+}
+
 function defined() {
   return and(isNotNull(vocabEntry.definition), ne(vocabEntry.definition, ''))
 }
@@ -97,18 +104,17 @@ export function buildQuiz(
       .slice(0, 3)
     const wanted: QuizMode = mode === 'mixed' ? (random() < 0.5 ? 'choice' : 'typed') : mode
     const questionMode = wanted === 'choice' && distractors.length < 3 ? 'typed' : wanted
-    const showsContext = normalizeAnswer(v.context) !== normalizeAnswer(v.term)
+    const hint =
+      normalizeAnswer(v.context) !== normalizeAnswer(v.term)
+        ? v.context
+        : (exampleLines(v.example)[0] ?? null)
 
     return {
       vocabId: v.id,
       mode: questionMode,
       direction,
       prompt: direction === 'term' ? (v.definition ?? '') : v.term,
-      context: showsContext
-        ? direction === 'term'
-          ? maskTerm(v.context, v.term)
-          : v.context
-        : null,
+      context: hint && direction === 'term' ? maskTerm(hint, v.term) : hint,
       options: questionMode === 'choice' ? shuffle([answer, ...distractors], random) : null,
     }
   })
@@ -171,6 +177,6 @@ export function answerQuiz(userId: string, { vocabId, mode, direction, answer }:
     if (status !== entry.status) {
       db.update(vocabEntry).set({ status }).where(eq(vocabEntry.id, vocabId)).run()
     }
-    return { correct, close, expected, status }
+    return { correct, close, expected, status, examples: exampleLines(entry.example) }
   })
 }

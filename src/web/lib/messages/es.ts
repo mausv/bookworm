@@ -155,7 +155,7 @@ export const es: Messages = {
   'missing.copyPrompt': 'Copiar prompt para Claude',
   'missing.copied': 'Prompt copiado. Pégalo en Claude con Bookworm conectado.',
   'missing.promptDefinitions':
-    'Usando Bookworm, define las palabras de vocabulario de "{title}" que no tienen definición ({count} por ahora). Usa la oración de la que salió cada una, explica las frases y modismos con palabras sencillas, y agrega también la traducción inglés↔español.',
+    'Usando Bookworm, define las palabras de vocabulario de "{title}" que no tienen definición ({count} por ahora). La mayoría son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo; explica las frases y modismos con palabras sencillas, escribe dos oraciones de ejemplo propias para cada una, y agrega también la traducción inglés↔español. Trabaja en tandas de 50.',
   'missing.promptExplanations':
     'Usando Bookworm, explica las citas de "{title}" que aún no tienen explicación ({count} por ahora): qué significa cada una en la historia, en una a tres oraciones.',
   'highlight.delete': 'Eliminar subrayado',

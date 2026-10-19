@@ -191,7 +191,9 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
             <p className="font-serif text-base/relaxed">{vocab.context}</p>
           )
         )}
-        {vocab.example && <p className="font-serif text-base/relaxed italic">{vocab.example}</p>}
+        {vocab.example && (
+          <p className="font-serif text-base/relaxed whitespace-pre-line italic">{vocab.example}</p>
+        )}
         {editing && <LookupLinks term={vocab.term} language={vocab.language} />}
         {editing && <VocabEditor vocab={vocab} onDone={() => setEditing(false)} />}
       </div>

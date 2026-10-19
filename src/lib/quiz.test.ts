@@ -171,3 +171,22 @@ describe('translations as answers', () => {
     ).toMatchObject({ correct: false })
   })
 })
+
+describe('examples', () => {
+  const novel = insertBook(userId, { title: 'Warbreaker' })
+  const ember = addWord(novel.id, 'ember', 'a glowing piece of coal')
+  updateVocab(userId, ember, { example: 'The Ember glowed.\nAn ember fell.' })
+
+  it('uses the first example as the hint when the highlight is only the word', () => {
+    const [byTerm] = buildQuiz(userId, { bookId: novel.id }, { mode: 'typed' }, sequence(0.7))
+    expect(byTerm).toMatchObject({ direction: 'term', context: 'The ____ glowed.' })
+    const [byMeaning] = buildQuiz(userId, { bookId: novel.id }, { mode: 'typed' }, sequence(0.1))
+    expect(byMeaning).toMatchObject({ direction: 'definition', context: 'The Ember glowed.' })
+  })
+
+  it('returns every example with the answer', () => {
+    expect(
+      answerQuiz(userId, { vocabId: ember, mode: 'typed', direction: 'term', answer: 'ember' })
+    ).toMatchObject({ examples: ['The Ember glowed.', 'An ember fell.'] })
+  })
+})

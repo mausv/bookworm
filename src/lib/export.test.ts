@@ -29,6 +29,8 @@ upsertLore(userId, {
 })
 const tropes = listVocab(userId, { bookId }).items.find((v) => v.term === 'tropes')
 if (tropes) updateVocab(userId, tropes.id, { definition: 'common themes', partOfSpeech: 'noun' })
+const hale = listVocab(userId, { bookId }).items.find((v) => v.term === 'hale')
+if (hale) updateVocab(userId, hale.id, { example: 'A hale old man.\n\nShe stayed hale.' })
 
 describe('bookMarkdown', () => {
   const exported = bookMarkdown(userId, bookId)
@@ -44,6 +46,7 @@ describe('bookMarkdown', () => {
       '## Vocabulary\n\n### Preface\n\n- **tropes** *(noun)* — common themes\n  - tropes,'
     )
     expect(markdown).toContain('- **hale** — healthy, of sound mind')
+    expect(markdown).toContain('  - e.g. A hale old man.\n  - e.g. She stayed hale.\n')
   })
 
   it('quotes by chapter with location and tags', () => {
