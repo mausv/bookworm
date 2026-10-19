@@ -53,12 +53,13 @@ describe('instructions', () => {
 })
 
 describe('list_books and get_book', () => {
-  it('lists books with counts', () => {
+  it('lists books with counts and what is missing', () => {
     expect(books).toEqual([
       expect.objectContaining({
         title: 'Mistborn',
         author: 'Brandon Sanderson',
         counts: { vocab: 9, quote: 2, lore: 1, unclassified: 1 },
+        missing: { definitions: expect.any(Number), explanations: 2 },
       }),
     ])
   })

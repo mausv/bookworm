@@ -78,7 +78,8 @@ export function createMcpServer(userId: string) {
   server.registerTool(
     'list_books',
     {
-      description: 'List all books with highlight counts per type.',
+      description:
+        'List all books with highlight counts per type and what each is missing: vocab without a definition and quotes without an explanation.',
       annotations: read,
     },
     () =>
@@ -90,6 +91,7 @@ export function createMcpServer(userId: string) {
             author: b.author,
             language: b.language,
             counts: b.counts,
+            missing: b.missing,
           })
         ),
       })

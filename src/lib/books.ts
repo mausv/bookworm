@@ -19,12 +19,29 @@ function countsBy<K extends string>(rows: { key: K | null; type: HighlightType; 
   return counts
 }
 
+const missingDefinitions = sql<number>`(
+  select count(*) from vocab_entry v where v.book_id = book.id
+  and (v.definition is null or v.definition = '')
+  and exists (select 1 from highlight h where h.vocab_id = v.id and h.type = 'vocab')
+)`
+
+const missingExplanations = sql<number>`(
+  select count(*) from highlight h where h.book_id = book.id and h.type = 'quote'
+  and (h.explanation is null or h.explanation = '')
+)`
+
+function selectWithMissing() {
+  return db
+    .select({ book, definitions: missingDefinitions, explanations: missingExplanations })
+    .from(book)
+}
+
 function owned(userId: string, id: string) {
   return and(eq(book.id, id), eq(book.userId, userId))
 }
 
 export function listBooks(userId: string) {
-  const books = db.select().from(book).where(eq(book.userId, userId)).orderBy(asc(book.title)).all()
+  const books = selectWithMissing().where(eq(book.userId, userId)).orderBy(asc(book.title)).all()
   const counts = countsBy(
     db
       .select({ key: highlight.bookId, type: highlight.type, count: sql<number>`count(*)` })
@@ -34,12 +51,17 @@ export function listBooks(userId: string) {
       .groupBy(highlight.bookId, highlight.type)
       .all()
   )
-  return books.map((b) => ({ ...b, counts: counts.get(b.id) ?? emptyCounts() }))
+  return books.map(({ book: b, definitions, explanations }) => ({
+    ...b,
+    counts: counts.get(b.id) ?? emptyCounts(),
+    missing: { definitions, explanations },
+  }))
 }
 
 export function getBook(userId: string, id: string) {
-  const found = db.select().from(book).where(owned(userId, id)).get()
-  if (!found) return undefined
+  const row = selectWithMissing().where(owned(userId, id)).get()
+  if (!row) return undefined
+  const { book: found, definitions, explanations } = row
   const counts = countsBy(
     db
       .select({ key: highlight.chapterId, type: highlight.type, count: sql<number>`count(*)` })
@@ -62,25 +84,10 @@ export function getBook(userId: string, id: string) {
     .from(loreEntry)
     .where(eq(loreEntry.bookId, id))
     .get()
-  const missing = db
-    .select({
-      definitions: sql<number>`(
-        select count(*) from vocab_entry v where v.book_id = ${id}
-        and (v.definition is null or v.definition = '')
-        and exists (select 1 from highlight h where h.vocab_id = v.id and h.type = 'vocab')
-      )`,
-      explanations: sql<number>`(
-        select count(*) from highlight h where h.book_id = ${id} and h.type = 'quote'
-        and (h.explanation is null or h.explanation = '')
-      )`,
-    })
-    .from(book)
-    .where(eq(book.id, id))
-    .get()
   return {
     ...found,
     counts: total,
-    missing: { definitions: missing?.definitions ?? 0, explanations: missing?.explanations ?? 0 },
+    missing: { definitions, explanations },
     loreEntries: lore?.count ?? 0,
     chapters,
     unchaptered: counts.get(null) ?? emptyCounts(),

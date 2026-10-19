@@ -159,6 +159,10 @@ export const en = {
     'Using Bookworm, define the vocab words in "{title}" that are missing a definition ({count} right now). Most entries are only the highlighted word, so pick the sense that fits the book and its chapter; explain phrases and idioms in plain words, write two short example sentences of your own for each, and add the English↔Spanish translation too. Work in batches of 50.',
   'missing.promptExplanations':
     'Using Bookworm, explain the quotes in "{title}" that have no explanation yet ({count} right now): what each one means in the story, in one to three sentences.',
+  'missing.inBooks': { one: 'in 1 book', other: 'in {count} books' },
+  'missing.badge': '{count} missing',
+  'missing.promptLibrary':
+    'Using Bookworm, fill in everything missing across my library: {definitions} words without a definition and {explanations} quotes without an explanation, in {books} books (list_books shows what each book is missing). Go one book at a time. For words: most entries are only the highlighted word, so pick the sense that fits the book and its chapter; explain phrases and idioms in plain words, write two short example sentences of your own for each, and add the English↔Spanish translation too. For quotes: explain what each one means in the story, in one to three sentences. Work in batches of 50.',
   'highlight.delete': 'Delete highlight',
   'highlight.deleteTitle': 'Delete this highlight?',
   'highlight.deleteDescription':

@@ -158,6 +158,10 @@ export const es: Messages = {
     'Usando Bookworm, define las palabras de vocabulario de "{title}" que no tienen definición ({count} por ahora). La mayoría son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo; explica las frases y modismos con palabras sencillas, escribe dos oraciones de ejemplo propias para cada una, y agrega también la traducción inglés↔español. Trabaja en tandas de 50.',
   'missing.promptExplanations':
     'Usando Bookworm, explica las citas de "{title}" que aún no tienen explicación ({count} por ahora): qué significa cada una en la historia, en una a tres oraciones.',
+  'missing.inBooks': { one: 'en 1 libro', other: 'en {count} libros' },
+  'missing.badge': '{count} pendientes',
+  'missing.promptLibrary':
+    'Usando Bookworm, completa todo lo que falta en mi biblioteca: {definitions} palabras sin definición y {explanations} citas sin explicación, en {books} libros (list_books muestra lo que le falta a cada libro). Ve un libro a la vez. Para las palabras: la mayoría son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo; explica las frases y modismos con palabras sencillas, escribe dos oraciones de ejemplo propias para cada una, y agrega también la traducción inglés↔español. Para las citas: explica qué significa cada una en la historia, en una a tres oraciones. Trabaja en tandas de 50.',
   'highlight.delete': 'Eliminar subrayado',
   'highlight.deleteTitle': '¿Eliminar este subrayado?',
   'highlight.deleteDescription':

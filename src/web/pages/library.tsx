@@ -5,6 +5,7 @@ import { Link, useOutletContext } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { AddHighlightDialog } from '@/web/components/add-highlight-dialog'
 import type { ShellContext } from '@/web/components/app-shell'
+import { LibraryMissing } from '@/web/components/library-missing'
 import { TypeCounts, TypeSpine } from '@/web/components/type-counts'
 import { api } from '@/web/lib/api'
 import { useT } from '@/web/lib/i18n'
@@ -43,6 +44,7 @@ export function LibraryPage() {
           {t('add.button')}
         </Button>
       </div>
+      <LibraryMissing books={books} />
       <ul className="divide-y">
         {books.map((book) => (
           <li key={book.id}>
@@ -56,7 +58,16 @@ export function LibraryPage() {
                   {book.title}
                 </p>
                 {book.author && <p className="text-muted-foreground italic">{book.author}</p>}
-                <TypeCounts counts={book.counts} className="pt-1" />
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
+                  <TypeCounts counts={book.counts} />
+                  {book.missing.definitions + book.missing.explanations > 0 && (
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {t('missing.badge', {
+                        count: book.missing.definitions + book.missing.explanations,
+                      })}
+                    </span>
+                  )}
+                </div>
               </div>
             </Link>
           </li>
