@@ -57,4 +57,6 @@ export interface QuizAnswer {
   expected: string
   status: VocabStatus
   examples: string[]
+  synonyms: string | null
+  antonyms: string | null
 }

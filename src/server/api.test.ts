@@ -95,15 +95,19 @@ describe('books, highlights and vocab', () => {
     expect((await ok.json()).highlight).toMatchObject({ note: 'mine', tags: ['ash'] })
   })
 
-  it('updates vocab definitions', async () => {
+  it('updates vocab definitions and synonyms', async () => {
     const { items } = await (await call('/api/vocab?missingDefinition=true&limit=1')).json()
     const res = await json('PATCH', `/api/vocab/${items[0].id}`, {
       definition: 'a common theme',
       status: 'learning',
+      synonyms: 'motif, cliché',
+      antonyms: null,
     })
     expect((await res.json()).vocab).toMatchObject({
       definition: 'a common theme',
       status: 'learning',
+      synonyms: 'motif, cliché',
+      antonyms: null,
     })
   })
 })

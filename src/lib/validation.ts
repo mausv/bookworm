@@ -73,6 +73,8 @@ export const vocabUpdateSchema = z
     definitionBy: z.enum(DEFINITION_SOURCES).nullable(),
     translation: z.string().trim().max(500).nullable(),
     translationBy: z.enum(TRANSLATION_SOURCES).nullable(),
+    synonyms: z.string().trim().max(1000).nullable(),
+    antonyms: z.string().trim().max(1000).nullable(),
   })
   .partial()
 

@@ -96,6 +96,31 @@ export function Translation({ vocab }: { vocab: Pick<Vocab, 'translation' | 'tra
   )
 }
 
+export function WordRelations({
+  vocab,
+  className,
+}: {
+  vocab: Pick<Vocab, 'synonyms' | 'antonyms'>
+  className?: string
+}) {
+  const t = useT()
+  const rows = [
+    { label: t('vocab.synonyms'), words: vocab.synonyms },
+    { label: t('vocab.antonyms'), words: vocab.antonyms },
+  ].filter((r) => r.words)
+  if (!rows.length) return null
+  return (
+    <dl className={cn('space-y-0.5 text-sm', className)}>
+      {rows.map((r) => (
+        <div key={r.label} className="flex flex-wrap gap-x-1.5">
+          <dt className="text-muted-foreground">{r.label}:</dt>
+          <dd className="text-foreground">{r.words}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 export function LookupLinks({ term, language }: { term: string; language: string | null }) {
   const t = useT()
   const link = buttonVariants({ variant: 'outline', size: 'sm' })
@@ -194,6 +219,7 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
         {vocab.example && (
           <p className="font-serif text-base/relaxed whitespace-pre-line italic">{vocab.example}</p>
         )}
+        <WordRelations vocab={vocab} />
         {editing && <LookupLinks term={vocab.term} language={vocab.language} />}
         {editing && <VocabEditor vocab={vocab} onDone={() => setEditing(false)} />}
       </div>
@@ -236,6 +262,8 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
   const [partOfSpeech, setPartOfSpeech] = useState(vocab.partOfSpeech ?? '')
   const [example, setExample] = useState(vocab.example ?? '')
   const [translation, setTranslation] = useState(vocab.translation ?? '')
+  const [synonyms, setSynonyms] = useState(vocab.synonyms ?? '')
+  const [antonyms, setAntonyms] = useState(vocab.antonyms ?? '')
   const target = translationTarget(vocab.language)
   const [status, setStatus] = useState(vocab.status)
   const id = vocab.id
@@ -252,6 +280,8 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
           partOfSpeech: partOfSpeech.trim() || null,
           example: example.trim() || null,
           status,
+          ...(synonyms.trim() !== (vocab.synonyms ?? '') && { synonyms: synonyms.trim() || null }),
+          ...(antonyms.trim() !== (vocab.antonyms ?? '') && { antonyms: antonyms.trim() || null }),
           ...(nextDefinition !== vocab.definition && {
             definitionBy: nextDefinition ? 'me' : null,
           }),
@@ -328,6 +358,26 @@ function VocabEditor({ vocab, onDone }: { vocab: Vocab; onDone: () => void }) {
           onChange={(e) => setExample(e.target.value)}
           placeholder={t('vocab.examplePlaceholder')}
         />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={`synonyms-${id}`}>{t('vocab.synonyms')}</Label>
+          <Input
+            id={`synonyms-${id}`}
+            value={synonyms}
+            onChange={(e) => setSynonyms(e.target.value)}
+            placeholder={t('vocab.wordListPlaceholder')}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`antonyms-${id}`}>{t('vocab.antonyms')}</Label>
+          <Input
+            id={`antonyms-${id}`}
+            value={antonyms}
+            onChange={(e) => setAntonyms(e.target.value)}
+            placeholder={t('vocab.wordListPlaceholder')}
+          />
+        </div>
       </div>
       <div className="space-y-1.5">
         <p id={`status-${id}`} className="text-sm font-medium">

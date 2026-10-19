@@ -22,6 +22,7 @@ export function MissingPanel({
   const t = useT()
   const queryClient = useQueryClient()
   const count = book.missing[kind]
+  const synonyms = kind === 'definitions' ? book.missing.synonyms : 0
 
   const lookUp = useMutation({
     mutationFn: () =>
@@ -38,16 +39,22 @@ export function MissingPanel({
 
   async function copyPrompt() {
     const key = kind === 'definitions' ? 'missing.promptDefinitions' : 'missing.promptExplanations'
-    await navigator.clipboard.writeText(t(key, { title: book.title, count }))
+    await navigator.clipboard.writeText(t(key, { title: book.title, count, synonyms }))
     toast.success(t('missing.copied'))
   }
 
-  if (!count && !missingOnly) return null
+  if (!count && !synonyms && !missingOnly) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm">
       <span className="mr-auto text-muted-foreground">
-        {t(kind === 'definitions' ? 'missing.definitions' : 'missing.explanations', { count })}
+        {[
+          (count > 0 || !synonyms) &&
+            t(kind === 'definitions' ? 'missing.definitions' : 'missing.explanations', { count }),
+          synonyms > 0 && t('missing.synonyms', { count: synonyms }),
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </span>
       <button
         type="button"
@@ -71,7 +78,7 @@ export function MissingPanel({
           {lookUp.isPending ? t('missing.lookingUp') : t('missing.lookUp')}
         </Button>
       )}
-      {count > 0 && (
+      {count + synonyms > 0 && (
         <Button variant="outline" size="sm" onClick={copyPrompt}>
           <Copy aria-hidden />
           {t('missing.copyPrompt')}

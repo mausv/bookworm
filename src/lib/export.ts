@@ -96,6 +96,8 @@ export function bookMarkdown(userId: string, bookId: string) {
         if (v.context.trim() !== v.term) lines.push(`  - ${v.context.replace(/\n/g, ' ')}`)
         for (const example of v.example?.split(/\r?\n/).filter((e) => e.trim()) ?? [])
           lines.push(`  - e.g. ${example.trim()}`)
+        if (v.synonyms) lines.push(`  - synonyms: ${v.synonyms}`)
+        if (v.antonyms) lines.push(`  - antonyms: ${v.antonyms}`)
       }
       lines.push('')
     }
@@ -169,6 +171,8 @@ export function vocabTsv(userId: string, scope: { bookId?: string; chapterId?: s
       v.partOfSpeech && `<i>${v.partOfSpeech}</i>`,
       v.translation && `<b>${v.translation}</b>`,
       v.definition,
+      v.synonyms && `<br><small>≈ ${v.synonyms}</small>`,
+      v.antonyms && `<br><small>≠ ${v.antonyms}</small>`,
     ]
       .filter(Boolean)
       .join(' ')

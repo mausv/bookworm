@@ -11,6 +11,7 @@ import { type MessageKey, useT } from '@/web/lib/i18n'
 import type { QuizAnswer, QuizMode, QuizQuestion } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import { cn } from '@/web/lib/utils'
+import { WordRelations } from './vocab-list'
 import type { Scope } from '@/web/pages/review'
 
 const MODES: { value: QuizMode; label: MessageKey }[] = [
@@ -255,6 +256,7 @@ function QuizRound({
               {example}
             </p>
           ))}
+          <WordRelations vocab={result} />
           <Button className="w-full" size="lg" onClick={next} autoFocus>
             {index + 1 < questions.length ? t('quiz.next') : t('quiz.seeScore')}
           </Button>

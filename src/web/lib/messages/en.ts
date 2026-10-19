@@ -149,6 +149,7 @@ export const en = {
     one: '1 quote without an explanation',
     other: '{count} quotes without an explanation',
   },
+  'missing.synonyms': { one: '1 word without synonyms', other: '{count} words without synonyms' },
   'missing.only': 'Missing only',
   'missing.lookUp': 'Look up in Wiktionary',
   'missing.lookingUp': 'Looking up…',
@@ -156,13 +157,13 @@ export const en = {
   'missing.copyPrompt': 'Copy prompt for Claude',
   'missing.copied': 'Prompt copied. Paste it into Claude with Bookworm connected.',
   'missing.promptDefinitions':
-    'Using Bookworm, define the vocab words in "{title}" that are missing a definition ({count} right now). Most entries are only the highlighted word, so pick the sense that fits the book and its chapter; explain phrases and idioms in plain words, write two short example sentences of your own for each, and add the English↔Spanish translation too. Work in batches of 50.',
+    'Using Bookworm, fill in the vocab words in "{title}": {count} have no definition and {synonyms} have a definition but no synonyms yet. Most entries are only the highlighted word, so pick the sense that fits the book and its chapter. Define the words without a definition (explain phrases and idioms in plain words), with two short example sentences of your own, two or three synonyms and antonyms, and the English↔Spanish translation. Then give the words that have a definition but no synonyms (get_vocab with missing_synonyms: true) their examples, synonyms and antonyms, keeping the definition. Work in batches of 50.',
   'missing.promptExplanations':
     'Using Bookworm, explain the quotes in "{title}" that have no explanation yet ({count} right now): what each one means in the story, in one to three sentences.',
   'missing.inBooks': { one: 'in 1 book', other: 'in {count} books' },
   'missing.badge': '{count} missing',
   'missing.promptLibrary':
-    'Using Bookworm, fill in everything missing across my library: {definitions} words without a definition and {explanations} quotes without an explanation, in {books} books (list_books shows what each book is missing). Go one book at a time. For words: most entries are only the highlighted word, so pick the sense that fits the book and its chapter; explain phrases and idioms in plain words, write two short example sentences of your own for each, and add the English↔Spanish translation too. For quotes: explain what each one means in the story, in one to three sentences. Work in batches of 50.',
+    'Using Bookworm, fill in everything missing across my library, in {books} books (list_books shows what each book is missing): {definitions} words without a definition, {synonyms} defined words without synonyms, and {explanations} quotes without an explanation. Go one book at a time. Most vocab entries are only the highlighted word, so pick the sense that fits the book and its chapter. Define the words without a definition (explain phrases and idioms in plain words), with two short example sentences of your own, two or three synonyms and antonyms, and the English↔Spanish translation. Give the words that have a definition but no synonyms (get_vocab with missing_synonyms: true) their examples, synonyms and antonyms, keeping the definition. Explain each quote: what it means in the story, in one to three sentences. Work in batches of 50.',
   'highlight.delete': 'Delete highlight',
   'highlight.deleteTitle': 'Delete this highlight?',
   'highlight.deleteDescription':
@@ -183,6 +184,9 @@ export const en = {
   'vocab.translation': 'Translation',
   'vocab.translationPlaceholderEs': 'In Spanish',
   'vocab.translationPlaceholderEn': 'In English',
+  'vocab.synonyms': 'Synonyms',
+  'vocab.antonyms': 'Antonyms',
+  'vocab.wordListPlaceholder': 'Separate with commas',
   'vocab.lookupMeaning': 'Look up in Google',
   'vocab.fromWiktionary': 'From Wiktionary',
   'vocab.lookupExamples': 'Example sentences',

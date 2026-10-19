@@ -148,6 +148,7 @@ export const es: Messages = {
     other: '{count} palabras sin definición',
   },
   'missing.explanations': { one: '1 cita sin explicación', other: '{count} citas sin explicación' },
+  'missing.synonyms': { one: '1 palabra sin sinónimos', other: '{count} palabras sin sinónimos' },
   'missing.only': 'Solo faltantes',
   'missing.lookUp': 'Buscar en Wiktionary',
   'missing.lookingUp': 'Buscando…',
@@ -155,13 +156,13 @@ export const es: Messages = {
   'missing.copyPrompt': 'Copiar prompt para Claude',
   'missing.copied': 'Prompt copiado. Pégalo en Claude con Bookworm conectado.',
   'missing.promptDefinitions':
-    'Usando Bookworm, define las palabras de vocabulario de "{title}" que no tienen definición ({count} por ahora). La mayoría son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo; explica las frases y modismos con palabras sencillas, escribe dos oraciones de ejemplo propias para cada una, y agrega también la traducción inglés↔español. Trabaja en tandas de 50.',
+    'Usando Bookworm, completa las palabras de vocabulario de "{title}": {count} no tienen definición y {synonyms} tienen definición pero aún no tienen sinónimos. La mayoría son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo. Define las palabras sin definición (explica las frases y modismos con palabras sencillas), con dos oraciones de ejemplo propias, dos o tres sinónimos y antónimos, y la traducción inglés↔español. Luego agrega ejemplos, sinónimos y antónimos a las palabras que tienen definición pero no sinónimos (get_vocab con missing_synonyms: true), sin cambiar la definición. Trabaja en tandas de 50.',
   'missing.promptExplanations':
     'Usando Bookworm, explica las citas de "{title}" que aún no tienen explicación ({count} por ahora): qué significa cada una en la historia, en una a tres oraciones.',
   'missing.inBooks': { one: 'en 1 libro', other: 'en {count} libros' },
   'missing.badge': '{count} pendientes',
   'missing.promptLibrary':
-    'Usando Bookworm, completa todo lo que falta en mi biblioteca: {definitions} palabras sin definición y {explanations} citas sin explicación, en {books} libros (list_books muestra lo que le falta a cada libro). Ve un libro a la vez. Para las palabras: la mayoría son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo; explica las frases y modismos con palabras sencillas, escribe dos oraciones de ejemplo propias para cada una, y agrega también la traducción inglés↔español. Para las citas: explica qué significa cada una en la historia, en una a tres oraciones. Trabaja en tandas de 50.',
+    'Usando Bookworm, completa todo lo que falta en mi biblioteca, en {books} libros (list_books muestra lo que le falta a cada libro): {definitions} palabras sin definición, {synonyms} palabras con definición pero sin sinónimos y {explanations} citas sin explicación. Ve un libro a la vez. La mayoría de las palabras son solo la palabra subrayada, así que elige el sentido que encaja con el libro y su capítulo. Define las palabras sin definición (explica las frases y modismos con palabras sencillas), con dos oraciones de ejemplo propias, dos o tres sinónimos y antónimos, y la traducción inglés↔español. Agrega ejemplos, sinónimos y antónimos a las palabras que tienen definición pero no sinónimos (get_vocab con missing_synonyms: true), sin cambiar la definición. Explica cada cita: qué significa en la historia, en una a tres oraciones. Trabaja en tandas de 50.',
   'highlight.delete': 'Eliminar subrayado',
   'highlight.deleteTitle': '¿Eliminar este subrayado?',
   'highlight.deleteDescription':
@@ -182,6 +183,9 @@ export const es: Messages = {
   'vocab.translation': 'Traducción',
   'vocab.translationPlaceholderEs': 'En español',
   'vocab.translationPlaceholderEn': 'En inglés',
+  'vocab.synonyms': 'Sinónimos',
+  'vocab.antonyms': 'Antónimos',
+  'vocab.wordListPlaceholder': 'Separa con comas',
   'vocab.lookupMeaning': 'Buscar en Google',
   'vocab.fromWiktionary': 'De Wiktionary',
   'vocab.lookupExamples': 'Oraciones de ejemplo',

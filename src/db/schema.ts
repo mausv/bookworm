@@ -398,6 +398,8 @@ export const vocabEntry = sqliteTable(
     definitionBy: text('definition_by', { enum: DEFINITION_SOURCES }),
     translation: text('translation'),
     translationBy: text('translation_by', { enum: TRANSLATION_SOURCES }),
+    synonyms: text('synonyms'),
+    antonyms: text('antonyms'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

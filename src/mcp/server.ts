@@ -18,7 +18,7 @@ import { listVocab, setVocabStatus, updateVocab } from '@/lib/vocab'
 
 const INSTRUCTIONS = `Reading highlights from the user's books (Kindle, Readest), organized as book → chapter → highlight.
 Highlight types follow the user's color convention:
-- vocab (yellow): a word or phrase the user didn't know. Each has a vocab entry (term, definition, part of speech, example, status new|learning|known). The highlight text may include surrounding words; the term is the word itself.
+- vocab (yellow): a word or phrase the user didn't know. Each has a vocab entry (term, definition, part of speech, examples, synonyms, antonyms, translation, status new|learning|known). The highlight text may include surrounding words; the term is the word itself.
 - quote (orange): a phrase the user liked.
 - lore (blue/aqua): book lore — world, characters, places, factions, events. Lore entries are a per-book wiki linked to the highlights they come from.
 - unclassified: no color info (e.g. Kindle My Clippings.txt) or an unmapped color; the user triages these.
@@ -51,6 +51,7 @@ const pageInput = {
 }
 const bookId = id.describe('Book id from list_books')
 const chapterId = id.describe('Chapter id from get_book')
+const wordList = z.array(z.string().trim().min(1).max(100)).max(10).optional()
 
 function highlightItem(h: ReturnType<typeof listHighlights>['items'][number], withBook: boolean) {
   return compact({
@@ -79,7 +80,7 @@ export function createMcpServer(userId: string) {
     'list_books',
     {
       description:
-        'List all books with highlight counts per type and what each is missing: vocab without a definition and quotes without an explanation.',
+        'List all books with highlight counts per type and what each is missing: vocab without a definition, defined vocab without synonyms, and quotes without an explanation.',
       annotations: read,
     },
     () =>
@@ -169,24 +170,38 @@ export function createMcpServer(userId: string) {
     'get_vocab',
     {
       description:
-        'Vocabulary entries (yellow highlights), optionally scoped to a book or chapter, by learning status, or only those still missing a definition or a translation. Each entry has a translation into the other of English/Spanish (English books → Spanish, Spanish books → English); translationBy "dictionary" means it came from Wiktionary.',
+        'Vocabulary entries (yellow highlights), optionally scoped to a book or chapter, by learning status, or only those still missing a definition, a translation or synonyms. Each entry has a translation into the other of English/Spanish (English books → Spanish, Spanish books → English); translationBy "dictionary" means it came from Wiktionary.',
       inputSchema: {
         book_id: bookId.optional(),
         chapter_id: chapterId.optional(),
         status: vocabStatus.optional(),
         missing_definition: z.boolean().optional().describe('Only entries without a definition'),
         missing_translation: z.boolean().optional().describe('Only entries without a translation'),
+        missing_synonyms: z
+          .boolean()
+          .optional()
+          .describe('Only entries whose synonyms and antonyms were never added'),
         ...pageInput,
       },
       annotations: read,
     },
-    ({ book_id, chapter_id, status, missing_definition, missing_translation, limit, cursor }) => {
+    ({
+      book_id,
+      chapter_id,
+      status,
+      missing_definition,
+      missing_translation,
+      missing_synonyms,
+      limit,
+      cursor,
+    }) => {
       const result = listVocab(userId, {
         bookId: book_id,
         chapterId: chapter_id,
         status,
         missingDefinition: missing_definition,
         missingTranslation: missing_translation,
+        missingSynonyms: missing_synonyms,
         limit,
         cursor,
       })
@@ -203,6 +218,8 @@ export function createMcpServer(userId: string) {
             definitionBy: v.definitionBy,
             translation: v.translation,
             translationBy: v.translationBy,
+            synonyms: v.synonyms || undefined,
+            antonyms: v.antonyms || undefined,
             context: v.context.trim() === v.term ? undefined : v.context,
             seen: v.occurrences > 1 ? v.occurrences : undefined,
             note: v.note === v.definition ? undefined : v.note,
@@ -263,13 +280,13 @@ export function createMcpServer(userId: string) {
     'add_definitions',
     {
       description:
-        'Write definitions for many vocab entries at once (up to 100 per call; marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep each short and dictionary-style, for the sense used in the book. Highlights usually contain only the word itself (context is present only when the user highlighted more), so use the book, chapter and your knowledge of it to pick the sense. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Add two short example sentences of your own (not quotes from the book) showing how each word or phrase is used. Optionally trim a term down to the word itself and add the translation into the other of English/Spanish. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context. Work through get_vocab with missing_definition: true in pages of about 50, one call at a time.',
+        'Write definitions for many vocab entries at once (up to 100 per call; marked as added by Claude). Use the language the user reads the book in unless asked otherwise; keep each short and dictionary-style, for the sense used in the book. Highlights usually contain only the word itself (context is present only when the user highlighted more), so use the book, chapter and your knowledge of it to pick the sense. For multi-word phrases and idioms, write a short plain explanation of what it means there instead. Add two short example sentences of your own (not quotes from the book) showing how each word or phrase is used, plus two or three synonyms and antonyms for that sense (pass an empty list when there are none, so the entry is marked done). Omit definition to keep the current one, e.g. when only adding examples, synonyms and antonyms to entries from get_vocab with missing_synonyms: true. Optionally trim a term down to the word itself and add the translation into the other of English/Spanish. Replace dictionary definitions (definitionBy "dictionary", the first Wiktionary sense) when they miss the sense in context. Work through get_vocab with missing_definition: true in pages of about 50, one call at a time.',
       inputSchema: {
         entries: z
           .array(
             z.object({
               vocab_id: id.describe('Vocab entry id from get_vocab'),
-              definition: z.string().trim().min(1).max(2000),
+              definition: z.string().trim().min(1).max(2000).optional(),
               part_of_speech: z.string().trim().max(50).optional(),
               example: z
                 .string()
@@ -286,6 +303,8 @@ export function createMcpServer(userId: string) {
                 .max(200)
                 .optional()
                 .describe('Corrected term, if the highlight included extra words'),
+              synonyms: wordList.describe('Synonyms for the sense in the book'),
+              antonyms: wordList.describe('Antonyms for the sense in the book'),
               translation: z
                 .string()
                 .trim()
@@ -305,8 +324,9 @@ export function createMcpServer(userId: string) {
     ({ entries }) => {
       const results = entries.map((e) =>
         updateVocab(userId, e.vocab_id, {
-          definition: e.definition,
-          definitionBy: 'claude',
+          ...(e.definition !== undefined && { definition: e.definition, definitionBy: 'claude' }),
+          ...(e.synonyms !== undefined && { synonyms: e.synonyms.join(', ') }),
+          ...(e.antonyms !== undefined && { antonyms: e.antonyms.join(', ') }),
           ...(e.part_of_speech !== undefined && { partOfSpeech: e.part_of_speech }),
           ...(e.example !== undefined && { example: e.example }),
           ...(e.term !== undefined && { term: e.term }),

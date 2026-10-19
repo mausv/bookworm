@@ -30,7 +30,13 @@ upsertLore(userId, {
 const tropes = listVocab(userId, { bookId }).items.find((v) => v.term === 'tropes')
 if (tropes) updateVocab(userId, tropes.id, { definition: 'common themes', partOfSpeech: 'noun' })
 const hale = listVocab(userId, { bookId }).items.find((v) => v.term === 'hale')
-if (hale) updateVocab(userId, hale.id, { example: 'A hale old man.\n\nShe stayed hale.' })
+if (hale) {
+  updateVocab(userId, hale.id, {
+    example: 'A hale old man.\n\nShe stayed hale.',
+    synonyms: 'healthy, robust',
+    antonyms: 'frail',
+  })
+}
 
 describe('bookMarkdown', () => {
   const exported = bookMarkdown(userId, bookId)
@@ -46,7 +52,9 @@ describe('bookMarkdown', () => {
       '## Vocabulary\n\n### Preface\n\n- **tropes** *(noun)* — common themes\n  - tropes,'
     )
     expect(markdown).toContain('- **hale** — healthy, of sound mind')
-    expect(markdown).toContain('  - e.g. A hale old man.\n  - e.g. She stayed hale.\n')
+    expect(markdown).toContain(
+      '  - e.g. A hale old man.\n  - e.g. She stayed hale.\n  - synonyms: healthy, robust\n  - antonyms: frail\n'
+    )
   })
 
   it('quotes by chapter with location and tags', () => {
@@ -74,6 +82,9 @@ describe('vocabTsv', () => {
     const lines = vocabTsv(userId, { bookId }).trimEnd().split('\n')
     expect(lines.slice(0, 3)).toEqual(['#separator:tab', '#html:true', '#tags column:4'])
     expect(lines).toContain('tropes\t<i>noun</i> common themes\ttropes,\tbookworm Mistborn Preface')
+    expect(lines.find((l) => l.startsWith('hale\t'))).toContain(
+      '<br><small>≈ healthy, robust</small> <br><small>≠ frail</small>'
+    )
     expect(lines).toHaveLength(3 + 9)
   })
 })

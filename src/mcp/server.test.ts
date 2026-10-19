@@ -59,7 +59,7 @@ describe('list_books and get_book', () => {
         title: 'Mistborn',
         author: 'Brandon Sanderson',
         counts: { vocab: 9, quote: 2, lore: 1, unclassified: 1 },
-        missing: { definitions: expect.any(Number), explanations: 2 },
+        missing: { definitions: 6, synonyms: 3, explanations: 2 },
       }),
     ])
   })
@@ -214,6 +214,41 @@ describe('write tools', () => {
       translation: 'contenido',
       translationBy: 'claude',
     })
+  })
+
+  it('adds synonyms to defined entries without touching the definition', async () => {
+    const { items } = await callTool(
+      'get_vocab',
+      { book_id: bookId, missing_synonyms: true, missing_definition: false },
+      vocabList
+    )
+    const opulence = items.find((v) => v.term === 'Opulence')
+    const stifled = items.find((v) => v.term === 'stifled')
+    await callTool(
+      'add_definitions',
+      {
+        entries: [
+          { vocab_id: opulence?.id, synonyms: ['affluence', 'luxury'], antonyms: ['poverty'] },
+          { vocab_id: stifled?.id, synonyms: [], antonyms: [] },
+        ],
+      },
+      z.object({ updated: z.number() })
+    )
+    const after = await callTool('get_vocab', { book_id: bookId, limit: 200 }, vocabList)
+    expect(after.items.find((v) => v.id === opulence?.id)).toMatchObject({
+      definition: 'great wealth or luxuriousness',
+      definitionBy: 'claude',
+      synonyms: 'affluence, luxury',
+      antonyms: 'poverty',
+    })
+    expect(after.items.find((v) => v.id === stifled?.id)).not.toHaveProperty('synonyms')
+    const remaining = await callTool(
+      'get_vocab',
+      { book_id: bookId, missing_synonyms: true },
+      vocabList
+    )
+    expect(remaining.items.map((v) => v.id)).not.toContain(opulence?.id)
+    expect(remaining.items.map((v) => v.id)).not.toContain(stifled?.id)
   })
 
   it('classifies highlights and creates vocab entries', async () => {

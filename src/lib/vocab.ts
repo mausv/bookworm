@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, ne, sql, type SQL } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, ne, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import { book, chapter, highlight, vocabEntry } from '@/db/schema'
 import { normalizeText, vocabTerm } from '@/importers/text'
@@ -53,6 +53,7 @@ export interface VocabFilter extends PageInput {
   status?: VocabStatus
   missingDefinition?: boolean
   missingTranslation?: boolean
+  missingSynonyms?: boolean
 }
 
 const firstOccurrence = sql`(
@@ -72,6 +73,8 @@ export const vocabColumns = {
   definitionBy: vocabEntry.definitionBy,
   translation: vocabEntry.translation,
   translationBy: vocabEntry.translationBy,
+  synonyms: vocabEntry.synonyms,
+  antonyms: vocabEntry.antonyms,
   occurrences: sql<number>`(
     select count(*) from highlight h3 where h3.vocab_id = ${vocabEntry.id} and h3.type = 'vocab'
   )`,
@@ -102,6 +105,7 @@ export function vocabConditions(userId: string, filter: VocabFilter) {
   if (filter.missingTranslation) {
     conditions.push(sql`(${vocabEntry.translation} is null or ${vocabEntry.translation} = '')`)
   }
+  if (filter.missingSynonyms) conditions.push(isNull(vocabEntry.synonyms))
   return and(...conditions)
 }
 
@@ -164,6 +168,8 @@ export type VocabUpdate = Partial<
     | 'definitionBy'
     | 'translation'
     | 'translationBy'
+    | 'synonyms'
+    | 'antonyms'
   >
 >
 

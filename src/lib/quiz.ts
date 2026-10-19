@@ -177,6 +177,14 @@ export function answerQuiz(userId: string, { vocabId, mode, direction, answer }:
     if (status !== entry.status) {
       db.update(vocabEntry).set({ status }).where(eq(vocabEntry.id, vocabId)).run()
     }
-    return { correct, close, expected, status, examples: exampleLines(entry.example) }
+    return {
+      correct,
+      close,
+      expected,
+      status,
+      examples: exampleLines(entry.example),
+      synonyms: entry.synonyms || null,
+      antonyms: entry.antonyms || null,
+    }
   })
 }

@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { describe, expect, it } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
@@ -31,12 +32,26 @@ describe('listBooks', () => {
     insertHighlight(novel.id, { type: 'quote' })
     insertHighlight(novel.id, { type: 'quote', explanation: 'Hope.' })
     ensureVocab(insertHighlight(novel.id, { type: 'vocab' }).id)
+    for (const { term, synonyms } of [
+      { term: 'awe', synonyms: null },
+      { term: 'dread', synonyms: '' },
+    ]) {
+      ensureVocab(insertHighlight(novel.id, { type: 'vocab', text: term }).id)
+      db.update(schema.vocabEntry)
+        .set({ definition: 'a feeling', synonyms })
+        .where(eq(schema.vocabEntry.termKey, term))
+        .run()
+    }
     insertBook(reader, { title: 'Elantris' })
     expect(listBooks(reader).map((b) => [b.title, b.missing])).toEqual([
-      ['Elantris', { definitions: 0, explanations: 0 }],
-      ['Warbreaker', { definitions: 1, explanations: 1 }],
+      ['Elantris', { definitions: 0, synonyms: 0, explanations: 0 }],
+      ['Warbreaker', { definitions: 1, synonyms: 1, explanations: 1 }],
     ])
-    expect(getBook(reader, novel.id)?.missing).toEqual({ definitions: 1, explanations: 1 })
+    expect(getBook(reader, novel.id)?.missing).toEqual({
+      definitions: 1,
+      synonyms: 1,
+      explanations: 1,
+    })
   })
 })
 
