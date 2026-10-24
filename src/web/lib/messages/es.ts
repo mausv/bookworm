@@ -234,6 +234,7 @@ export const es: Messages = {
 
   'review.cards': 'Tarjetas',
   'review.quiz': 'Quiz',
+  'review.match': 'Parejas',
   'review.mode': 'Modo',
   'review.allChapters': 'Todos los capítulos',
 
@@ -283,6 +284,19 @@ export const es: Messages = {
   'quiz.seeScore': 'Ver puntaje',
   'quiz.yourAnswer': 'Tu respuesta',
   'quiz.check': 'Comprobar',
+
+  'match.pairWith': 'Unir palabras con',
+  'match.definitions': 'Significados',
+  'match.translations': 'Traducciones',
+  'match.progress': '{n} de {total} unidas, {mistakes} errores',
+  'match.noMistakes': 'Sin errores',
+  'match.mistakes': { one: '1 error', other: '{count} errores' },
+  'match.newBest': 'Nuevo mejor tiempo',
+  'match.best': 'Mejor {time}',
+  'match.again': 'Jugar otra vez',
+  'match.emptyTranslations': 'Aún no hay palabras traducidas aquí.',
+  'match.emptyTranslationsBody':
+    'Agrega traducciones en la pestaña Vocabulario del libro, o pídele a Claude que las complete con el conector de Bookworm.',
 
   'colors.title': 'Colores de subrayado',
   'colors.description':

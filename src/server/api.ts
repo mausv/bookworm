@@ -20,7 +20,7 @@ import { bookMarkdown, jsonDump, vocabTsv } from '@/lib/export'
 import { addHighlight, importContent } from '@/lib/import'
 import { deleteLore, listLore, unlinkLoreHighlight, updateLore, upsertLore } from '@/lib/lore'
 import { listConnectedClients, revokeConnectedClient } from '@/lib/oauth'
-import { answerQuiz, buildQuiz } from '@/lib/quiz'
+import { answerQuiz, buildMatch, buildQuiz } from '@/lib/quiz'
 import {
   addTagsSchema,
   apiKeySchema,
@@ -33,6 +33,7 @@ import {
   loreKind,
   loreUpdateSchema,
   manualHighlightSchema,
+  matchPair,
   quizAnswerSchema,
   quizMode,
   source,
@@ -243,6 +244,15 @@ export const api = new Hono<Env>()
       ),
     })
   })
+  .get('/quiz/match', (c) =>
+    c.json({
+      pairs: buildMatch(
+        c.get('userId'),
+        { bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') },
+        { pair: query(matchPair, c.req.query('pair')) }
+      ),
+    })
+  )
   .post('/quiz/answer', async (c) => {
     const parsed = await parseJson(c, quizAnswerSchema)
     if (!parsed.success) return invalid(c, parsed.error)

@@ -234,6 +234,7 @@ export const en = {
 
   'review.cards': 'Flashcards',
   'review.quiz': 'Quiz',
+  'review.match': 'Match',
   'review.mode': 'Mode',
   'review.allChapters': 'All chapters',
 
@@ -283,6 +284,19 @@ export const en = {
   'quiz.seeScore': 'See score',
   'quiz.yourAnswer': 'Your answer',
   'quiz.check': 'Check',
+
+  'match.pairWith': 'Match words with',
+  'match.definitions': 'Meanings',
+  'match.translations': 'Translations',
+  'match.progress': '{n} of {total} matched, {mistakes} wrong',
+  'match.noMistakes': 'No mistakes',
+  'match.mistakes': { one: '1 mistake', other: '{count} mistakes' },
+  'match.newBest': 'New best time',
+  'match.best': 'Best {time}',
+  'match.again': 'Play again',
+  'match.emptyTranslations': 'No translated words here yet.',
+  'match.emptyTranslationsBody':
+    'Add translations in the book’s Vocab tab, or ask Claude to fill them in through the Bookworm connector.',
 
   'colors.title': 'Highlight colors',
   'colors.description': 'Which type each highlight color becomes. Changes apply to future imports.',

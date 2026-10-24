@@ -169,6 +169,18 @@ describe('quiz and exports', () => {
     expect(await res.json()).toMatchObject({ correct: false, status: 'learning' })
   })
 
+  it('deals a matching round', async () => {
+    const { pairs } = await (await call('/api/quiz/match')).json()
+    expect(pairs.length).toBeGreaterThanOrEqual(4)
+    expect(pairs.map((p: { answer: string }) => p.answer)).toContain('meaning 0')
+    expect(pairs[0]).toEqual({
+      vocabId: expect.any(String),
+      term: expect.any(String),
+      answer: expect.any(String),
+    })
+    expect((await (await call('/api/quiz/match?pair=translation')).json()).pairs).toEqual([])
+  })
+
   it('downloads Markdown, TSV and JSON exports', async () => {
     const { books } = await (await call('/api/books')).json()
     const md = await call(`/api/export/books/${books[0].id}/markdown`)

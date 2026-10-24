@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { setupTestDb } from '@/test/db'
 
 const { db, schema, insertBook, insertHighlight, insertUser } = await setupTestDb()
 const userId = insertUser().id
-const { answerQuiz, buildQuiz, editDistance, normalizeAnswer } = await import('./quiz')
-const { ensureVocab, updateVocab } = await import('./vocab')
+const { answerQuiz, buildMatch, buildQuiz, editDistance, normalizeAnswer } = await import('./quiz')
+const { ensureVocab, setVocabStatus, updateVocab } = await import('./vocab')
 const { getHighlight } = await import('./highlights')
 
 const book = insertBook(userId, { title: 'Mistborn' })
@@ -196,5 +196,33 @@ describe('examples', () => {
       synonyms: 'cinder',
       antonyms: null,
     })
+  })
+})
+
+describe('buildMatch', () => {
+  let novel = { id: '' }
+  let words: string[] = []
+  beforeAll(() => {
+    novel = insertBook(userId, { title: 'Oathbringer' })
+    words = ['spren', 'shardblade', 'highstorm', 'chasm'].map((term, i) =>
+      addWord(novel.id, term, `meaning ${i}`)
+    )
+    setVocabStatus(userId, [words[0]], 'known')
+  })
+
+  it('deals defined words in scope, new and learning first', () => {
+    const pairs = buildMatch(userId, { bookId: novel.id }, { count: 3 })
+    expect(pairs.map((p) => p.term).sort()).toEqual(['chasm', 'highstorm', 'shardblade'])
+    expect(pairs.find((p) => p.vocabId === words[1])?.answer).toBe('meaning 1')
+  })
+
+  it('pairs words with translations, skipping untranslated ones and duplicate answers', () => {
+    expect(buildMatch(userId, { bookId: novel.id }, { pair: 'translation' })).toEqual([])
+    updateVocab(userId, words[1], { translation: 'hoja esquirlada' })
+    updateVocab(userId, words[2], { translation: 'Hoja esquirlada' })
+    updateVocab(userId, words[3], { translation: 'abismo' })
+    expect(
+      buildMatch(userId, { bookId: novel.id }, { pair: 'translation' }).map((p) => p.answer)
+    ).toHaveLength(2)
   })
 })

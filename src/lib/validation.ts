@@ -101,6 +101,7 @@ export const colorMappingSchema = z.object({
 })
 
 export const quizMode = z.enum(['choice', 'typed'])
+export const matchPair = z.enum(['definition', 'translation'])
 
 export const quizAnswerSchema = z.object({
   vocabId: id,

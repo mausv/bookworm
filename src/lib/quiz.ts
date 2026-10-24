@@ -7,6 +7,7 @@ import { selectVocab, vocabConditions } from './vocab'
 
 export type QuizMode = 'choice' | 'typed'
 export type QuizDirection = 'term' | 'definition'
+export type MatchPair = 'definition' | 'translation'
 
 export interface QuizQuestion {
   vocabId: string
@@ -65,15 +66,19 @@ function exampleLines(example: string | null) {
     .filter(Boolean)
 }
 
-function defined() {
-  return and(isNotNull(vocabEntry.definition), ne(vocabEntry.definition, ''))
+type TextColumn = typeof vocabEntry.definition | typeof vocabEntry.translation
+
+function filled(column: TextColumn) {
+  return and(isNotNull(column), ne(column, ''))
 }
 
-function scopedVocab(userId: string, scope: QuizScope) {
+function scopedVocab(userId: string, scope: QuizScope, column: TextColumn = vocabEntry.definition) {
   return selectVocab()
-    .where(and(vocabConditions(userId, scope), defined()))
+    .where(and(vocabConditions(userId, scope), filled(column)))
     .all()
 }
+
+const STATUS_ORDER = { new: 0, learning: 0, known: 1 }
 
 export function buildQuiz(
   userId: string,
@@ -83,9 +88,8 @@ export function buildQuiz(
 ): QuizQuestion[] {
   const inScope = scopedVocab(userId, scope)
   const pool = inScope.length >= 4 ? inScope : scopedVocab(userId, {})
-  const order = { new: 0, learning: 0, known: 1 }
   const picked = shuffle(inScope, random)
-    .sort((a, b) => order[a.status] - order[b.status])
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
     .slice(0, count)
 
   return picked.map((v) => {
@@ -118,6 +122,27 @@ export function buildQuiz(
       options: questionMode === 'choice' ? shuffle([answer, ...distractors], random) : null,
     }
   })
+}
+
+export function buildMatch(
+  userId: string,
+  scope: QuizScope,
+  { count = 10, pair = 'definition' }: { count?: number; pair?: MatchPair } = {},
+  random = Math.random
+) {
+  const column = pair === 'translation' ? vocabEntry.translation : vocabEntry.definition
+  const seen = new Set<string>()
+  return shuffle(scopedVocab(userId, scope, column), random)
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
+    .flatMap((v) => {
+      const answer = (pair === 'translation' ? v.translation : v.definition) ?? ''
+      const keys = [normalizeAnswer(v.term), normalizeAnswer(answer)]
+      if (keys.some((k) => seen.has(k))) return []
+      seen.add(keys[0])
+      seen.add(keys[1])
+      return [{ vocabId: v.id, term: v.term, answer }]
+    })
+    .slice(0, count)
 }
 
 function isCorrect(

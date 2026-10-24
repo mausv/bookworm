@@ -5,6 +5,7 @@ import type { getHighlight } from '@/lib/highlights'
 import type { BookImportResult } from '@/lib/import'
 import type { listLore } from '@/lib/lore'
 import type { listConnectedClients } from '@/lib/oauth'
+import type { buildMatch } from '@/lib/quiz'
 import type { getVocab, listVocab } from '@/lib/vocab'
 import type { Source, VocabStatus } from '@/shared/types'
 
@@ -17,6 +18,7 @@ type Json<T> = T extends Date
       : T
 
 export type Book = Json<ReturnType<typeof listBooks>[number]>
+export type MatchCard = Json<ReturnType<typeof buildMatch>[number]>
 export type BookDetail = Json<NonNullable<ReturnType<typeof getBook>>>
 export type Chapter = BookDetail['chapters'][number]
 export type TypeCounts = Book['counts']

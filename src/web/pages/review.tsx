@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Flashcards } from '@/web/components/flashcards'
+import { MatchGame } from '@/web/components/match-game'
 import { Quiz } from '@/web/components/quiz'
 import { api } from '@/web/lib/api'
 import { useT } from '@/web/lib/i18n'
@@ -16,6 +17,7 @@ export interface Scope {
 const MODES = [
   { value: 'cards', label: 'review.cards' },
   { value: 'quiz', label: 'review.quiz' },
+  { value: 'match', label: 'review.match' },
 ] as const
 
 export function ReviewPage() {
@@ -23,7 +25,7 @@ export function ReviewPage() {
   const [params, setParams] = useSearchParams()
   const bookId = params.get('bookId') ?? undefined
   const chapterId = params.get('chapterId') ?? undefined
-  const mode = params.get('mode') === 'quiz' ? 'quiz' : 'cards'
+  const mode = MODES.find((m) => m.value === params.get('mode'))?.value ?? 'cards'
 
   const books = useQuery({
     queryKey: ['books'],
@@ -64,7 +66,7 @@ export function ReviewPage() {
               type="button"
               role="radio"
               aria-checked={mode === m.value}
-              onClick={() => update({ mode: m.value === 'quiz' ? 'quiz' : undefined })}
+              onClick={() => update({ mode: m.value === 'cards' ? undefined : m.value })}
               className={cn(
                 'h-10 rounded-full px-4 text-sm transition-colors sm:h-8',
                 mode === m.value
@@ -109,11 +111,9 @@ export function ReviewPage() {
         )}
       </div>
 
-      {mode === 'quiz' ? (
-        <Quiz key={scopeKey} scope={scope} />
-      ) : (
-        <Flashcards key={scopeKey} scope={scope} />
-      )}
+      {mode === 'quiz' && <Quiz key={scopeKey} scope={scope} />}
+      {mode === 'match' && <MatchGame key={scopeKey} scope={scope} />}
+      {mode === 'cards' && <Flashcards key={scopeKey} scope={scope} />}
     </div>
   )
 }
