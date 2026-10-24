@@ -20,6 +20,7 @@ import { bookMarkdown, jsonDump, vocabTsv } from '@/lib/export'
 import { addHighlight, importContent } from '@/lib/import'
 import { deleteLore, listLore, unlinkLoreHighlight, updateLore, upsertLore } from '@/lib/lore'
 import { listConnectedClients, revokeConnectedClient } from '@/lib/oauth'
+import { recordReviews, studySummary } from '@/lib/history'
 import { answerQuiz, buildMatch, buildQuiz } from '@/lib/quiz'
 import {
   addTagsSchema,
@@ -36,6 +37,8 @@ import {
   matchPair,
   quizAnswerSchema,
   quizMode,
+  reviewsSchema,
+  vocabSort,
   source,
   scopeSchema,
   vocabStatus,
@@ -154,6 +157,9 @@ export const api = new Hono<Env>()
         status: query(vocabStatus, c.req.query('status')),
         missingDefinition: c.req.query('missingDefinition') === 'true',
         missingTranslation: c.req.query('missingTranslation') === 'true',
+        studied: c.req.query('studied') === 'true',
+        revise: c.req.query('revise') === 'true',
+        sort: query(vocabSort, c.req.query('sort')),
         ...pageParams(c),
       })
     )
@@ -236,7 +242,11 @@ export const api = new Hono<Env>()
     return c.json({
       questions: buildQuiz(
         c.get('userId'),
-        { bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') },
+        {
+          bookId: c.req.query('bookId'),
+          chapterId: c.req.query('chapterId'),
+          revise: c.req.query('revise') === 'true',
+        },
         {
           count: Number.isInteger(count) && count > 0 ? Math.min(count, 50) : undefined,
           mode: modeParam === 'mixed' ? 'mixed' : query(quizMode, modeParam),
@@ -253,6 +263,21 @@ export const api = new Hono<Env>()
       ),
     })
   )
+  .post('/reviews', async (c) => {
+    const parsed = await parseJson(c, reviewsSchema)
+    if (!parsed.success) return invalid(c, parsed.error)
+    return c.json(recordReviews(c.get('userId'), parsed.data.reviews))
+  })
+  .get('/history', (c) => {
+    const tzOffset = Number(c.req.query('tz'))
+    return c.json(
+      studySummary(
+        c.get('userId'),
+        { bookId: c.req.query('bookId'), chapterId: c.req.query('chapterId') },
+        { tzOffset: Number.isInteger(tzOffset) && Math.abs(tzOffset) <= 14 * 60 ? tzOffset : 0 }
+      )
+    )
+  })
   .post('/quiz/answer', async (c) => {
     const parsed = await parseJson(c, quizAnswerSchema)
     if (!parsed.success) return invalid(c, parsed.error)

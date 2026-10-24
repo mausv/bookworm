@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import { quizAttempt, vocabEntry } from '@/db/schema'
 import type { VocabStatus } from '@/shared/types'
@@ -21,6 +21,7 @@ export interface QuizQuestion {
 export interface QuizScope {
   bookId?: string
   chapterId?: string
+  revise?: boolean
 }
 
 export function normalizeAnswer(text: string) {
@@ -54,9 +55,18 @@ function shuffle<T>(items: T[], random: () => number) {
   return copy
 }
 
-function maskTerm(context: string, term: string) {
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return context.replace(new RegExp(escaped, 'giu'), '____')
+// Blanks out the term and its inflections (heap → heaps, saunter → sauntering) by matching
+// words that start with each term word's stem; short words only count in single-word terms.
+export function maskTerm(text: string, term: string) {
+  const words = term.split(/[^\p{L}\p{N}]+/u).filter(Boolean)
+  const stems = words
+    .filter((w) => words.length === 1 || w.length >= 4)
+    .map((w) => w.slice(0, w.length >= 4 ? Math.max(4, w.length - 3) : w.length))
+  if (!stems.length) return text
+  return text.replace(
+    new RegExp(`(?<![\\p{L}\\p{N}])(?:${stems.join('|')})[\\p{L}\\p{N}]*`, 'giu'),
+    '____'
+  )
 }
 
 function exampleLines(example: string | null) {
@@ -117,7 +127,7 @@ export function buildQuiz(
       vocabId: v.id,
       mode: questionMode,
       direction,
-      prompt: direction === 'term' ? (v.definition ?? '') : v.term,
+      prompt: direction === 'term' ? maskTerm(v.definition ?? '', v.term) : v.term,
       context: hint && direction === 'term' ? maskTerm(hint, v.term) : hint,
       options: questionMode === 'choice' ? shuffle([answer, ...distractors], random) : null,
     }
@@ -140,7 +150,7 @@ export function buildMatch(
       if (keys.some((k) => seen.has(k))) return []
       seen.add(keys[0])
       seen.add(keys[1])
-      return [{ vocabId: v.id, term: v.term, answer }]
+      return [{ vocabId: v.id, term: v.term, answer: maskTerm(answer, v.term) }]
     })
     .slice(0, count)
 }
@@ -175,7 +185,7 @@ function nextStatus(vocabId: string, current: VocabStatus, correct: boolean): Vo
   const recent = db
     .select({ correct: quizAttempt.correct })
     .from(quizAttempt)
-    .where(eq(quizAttempt.vocabId, vocabId))
+    .where(and(eq(quizAttempt.vocabId, vocabId), inArray(quizAttempt.mode, ['choice', 'typed'])))
     .orderBy(desc(quizAttempt.createdAt), desc(sql`rowid`))
     .limit(2)
     .all()

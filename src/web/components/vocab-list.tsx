@@ -9,9 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { translationTarget, VOCAB_STATUSES, type VocabStatus } from '@/shared/types'
 import { api } from '@/web/lib/api'
 import { groupByChapter, locationLabel } from '@/web/lib/highlights'
-import { useT } from '@/web/lib/i18n'
+import { useLocale, useT } from '@/web/lib/i18n'
 import { examplesUrl, meaningUrl, wiktionaryUrl } from '@/web/lib/lookup'
 import { invalidateReading } from '@/web/lib/queries'
+import { timeAgo } from '@/web/lib/time'
 import type { Page, Vocab, VocabDetail } from '@/web/lib/types'
 import { withQuery } from '@/web/lib/url'
 import { cn } from '@/web/lib/utils'
@@ -165,6 +166,7 @@ export function SeenBadge({ occurrences }: { occurrences: number }) {
 
 function VocabItem({ vocab }: { vocab: Vocab }) {
   const t = useT()
+  const { locale } = useLocale()
   const [editing, setEditing] = useState(false)
 
   return (
@@ -220,6 +222,15 @@ function VocabItem({ vocab }: { vocab: Vocab }) {
           <p className="font-serif text-base/relaxed whitespace-pre-line italic">{vocab.example}</p>
         )}
         <WordRelations vocab={vocab} />
+        {editing && vocab.reviews > 0 && vocab.lastReviewed !== null && (
+          <p className="tabular-nums">
+            {t('vocab.studied', {
+              count: vocab.reviews,
+              percent: Math.round((vocab.reviewsRight / vocab.reviews) * 100),
+              ago: timeAgo(vocab.lastReviewed, locale),
+            })}
+          </p>
+        )}
         {editing && <LookupLinks term={vocab.term} language={vocab.language} />}
         {editing && <VocabEditor vocab={vocab} onDone={() => setEditing(false)} />}
       </div>

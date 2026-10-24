@@ -32,7 +32,7 @@ const GRADES: { grade: CardGrade; label: MessageKey }[] = [
 export function Flashcards({ scope }: { scope: Scope }) {
   const t = useT()
   const queryClient = useQueryClient()
-  const [filter, setFilter] = useState<Filter>('due')
+  const [filter, setFilter] = useState<Filter>(scope.revise ? 'all' : 'due')
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
 
@@ -52,8 +52,23 @@ export function Flashcards({ scope }: { scope: Scope }) {
   })
 
   const grade = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: VocabStatus }) =>
-      api(`/vocab/${id}`, { method: 'PATCH', json: { status } }),
+    mutationFn: async ({
+      id,
+      status,
+      changed,
+      correct,
+    }: {
+      id: string
+      status: VocabStatus
+      changed: boolean
+      correct: boolean
+    }) => {
+      await api('/reviews', {
+        method: 'POST',
+        json: { reviews: [{ vocabId: id, mode: 'card', correct }] },
+      })
+      if (changed) await api(`/vocab/${id}`, { method: 'PATCH', json: { status } })
+    },
     onError: (error) => toast.error(error.message),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['vocab'] }),
   })
@@ -113,7 +128,7 @@ export function Flashcards({ scope }: { scope: Scope }) {
   function answer(g: CardGrade) {
     if (!card) return
     const status = nextStatus(g, card.status)
-    if (status !== card.status) grade.mutate({ id: card.id, status })
+    grade.mutate({ id: card.id, status, changed: status !== card.status, correct: g !== 'again' })
     setIndex((i) => i + 1)
     setRevealed(false)
   }

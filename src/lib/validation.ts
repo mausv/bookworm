@@ -5,6 +5,7 @@ import {
   LORE_KINDS,
   SOURCES,
   TRANSLATION_SOURCES,
+  VOCAB_SORTS,
   VOCAB_STATUSES,
 } from '@/shared/types'
 
@@ -102,6 +103,14 @@ export const colorMappingSchema = z.object({
 
 export const quizMode = z.enum(['choice', 'typed'])
 export const matchPair = z.enum(['definition', 'translation'])
+export const vocabSort = z.enum(VOCAB_SORTS)
+
+export const reviewsSchema = z.object({
+  reviews: z
+    .array(z.object({ vocabId: id, mode: z.enum(['card', 'match']), correct: z.boolean() }))
+    .min(1)
+    .max(200),
+})
 
 export const quizAnswerSchema = z.object({
   vocabId: id,

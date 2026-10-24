@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
+import { X } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Flashcards } from '@/web/components/flashcards'
+import { History } from '@/web/components/history'
 import { MatchGame } from '@/web/components/match-game'
 import { Quiz } from '@/web/components/quiz'
 import { api } from '@/web/lib/api'
@@ -12,12 +14,14 @@ import { cn } from '@/web/lib/utils'
 export interface Scope {
   bookId?: string
   chapterId?: string
+  revise?: boolean
 }
 
 const MODES = [
   { value: 'cards', label: 'review.cards' },
   { value: 'quiz', label: 'review.quiz' },
   { value: 'match', label: 'review.match' },
+  { value: 'history', label: 'review.history' },
 ] as const
 
 export function ReviewPage() {
@@ -26,6 +30,7 @@ export function ReviewPage() {
   const bookId = params.get('bookId') ?? undefined
   const chapterId = params.get('chapterId') ?? undefined
   const mode = MODES.find((m) => m.value === params.get('mode'))?.value ?? 'cards'
+  const revise = params.get('revise') === 'true' && (mode === 'quiz' || mode === 'cards')
 
   const books = useQuery({
     queryKey: ['books'],
@@ -48,8 +53,8 @@ export function ReviewPage() {
 
   const withVocab = (books.data?.books ?? []).filter((b) => b.counts.vocab > 0)
   const chapters = (book.data?.book.chapters ?? []).filter((c) => c.counts.vocab > 0)
-  const scope: Scope = { bookId, chapterId }
-  const scopeKey = `${bookId}-${chapterId}`
+  const scope: Scope = { bookId, chapterId, revise }
+  const scopeKey = `${bookId}-${chapterId}-${revise}`
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -66,9 +71,11 @@ export function ReviewPage() {
               type="button"
               role="radio"
               aria-checked={mode === m.value}
-              onClick={() => update({ mode: m.value === 'cards' ? undefined : m.value })}
+              onClick={() =>
+                update({ mode: m.value === 'cards' ? undefined : m.value, revise: undefined })
+              }
               className={cn(
-                'h-10 rounded-full px-4 text-sm transition-colors sm:h-8',
+                'h-10 rounded-full px-3 text-sm transition-colors sm:h-8 sm:px-4',
                 mode === m.value
                   ? 'bg-background font-medium shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -111,9 +118,32 @@ export function ReviewPage() {
         )}
       </div>
 
+      {revise && (
+        <p className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm">
+          {t('history.reviseOnly')}
+          <button
+            type="button"
+            onClick={() => update({ revise: undefined })}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <X aria-hidden className="size-4" />
+            {t('history.clearRevise')}
+          </button>
+        </p>
+      )}
+
       {mode === 'quiz' && <Quiz key={scopeKey} scope={scope} />}
       {mode === 'match' && <MatchGame key={scopeKey} scope={scope} />}
       {mode === 'cards' && <Flashcards key={scopeKey} scope={scope} />}
+      {mode === 'history' && (
+        <History
+          key={scopeKey}
+          scope={scope}
+          onPractice={(next) =>
+            update({ mode: next === 'cards' ? undefined : next, revise: 'true' })
+          }
+        />
+      )}
     </div>
   )
 }

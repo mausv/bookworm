@@ -19,5 +19,11 @@ export function translationTarget(language: string | null) {
   return null
 }
 
+export const REVIEW_MODES = ['choice', 'typed', 'card', 'match'] as const
+export type ReviewMode = (typeof REVIEW_MODES)[number]
+
+export const VOCAB_SORTS = ['reading', 'revise', 'most', 'recent'] as const
+export type VocabSort = (typeof VOCAB_SORTS)[number]
+
 export const DEFINITION_SOURCES = ['me', 'claude', 'dictionary'] as const
 export type DefinitionSource = (typeof DEFINITION_SOURCES)[number]

@@ -38,6 +38,10 @@ describe('withQuery', () => {
     )
   })
 
+  it('keeps true flags and drops false ones', () => {
+    expect(withQuery('/vocab', { studied: true, revise: false })).toBe('/vocab?studied=true')
+  })
+
   it('returns the bare path without params', () => {
     expect(withQuery('/vocab', { status: undefined })).toBe('/vocab')
   })

@@ -235,6 +235,7 @@ export const es: Messages = {
   'review.cards': 'Tarjetas',
   'review.quiz': 'Quiz',
   'review.match': 'Parejas',
+  'review.history': 'Historial',
   'review.mode': 'Modo',
   'review.allChapters': 'Todos los capítulos',
 
@@ -297,6 +298,36 @@ export const es: Messages = {
   'match.emptyTranslations': 'Aún no hay palabras traducidas aquí.',
   'match.emptyTranslationsBody':
     'Agrega traducciones en la pestaña Vocabulario del libro, o pídele a Claude que las complete con el conector de Bookworm.',
+
+  'history.reviews': 'Repasos',
+  'history.accuracy': 'Aciertos',
+  'history.words': 'Palabras estudiadas',
+  'history.streak': 'Racha',
+  'history.days': { one: '1 día', other: '{count} días' },
+  'history.lastDays': {
+    one: '1 repaso en los últimos 30 días',
+    other: '{count} repasos en los últimos 30 días',
+  },
+  'history.today': 'Hoy',
+  'history.wordsTitle': 'Palabras',
+  'history.sortBy': 'Ordenar palabras',
+  'history.revise': 'Por repasar',
+  'history.most': 'Más estudiadas',
+  'history.recent': 'Recientes',
+  'history.practiceQuiz': 'Practicar con un quiz',
+  'history.practiceCards': 'Practicar con tarjetas',
+  'history.nothingToRevise': 'Nada que repasar por ahora. Bien.',
+  'history.wordStats': { one: 'Una vez · {percent}% bien', other: '{count}× · {percent}% bien' },
+  'history.more': 'Mostrar más',
+  'history.emptyTitle': 'Aún no hay repasos.',
+  'history.emptyBody':
+    'Las tarjetas, los quizzes y el juego de parejas cuentan. Tu historial aparece aquí.',
+  'history.reviseOnly': 'Solo palabras por repasar',
+  'history.clearRevise': 'Ver todas las palabras',
+  'vocab.studied': {
+    one: 'Estudiada una vez · {percent}% bien · {ago}',
+    other: 'Estudiada {count}× · {percent}% bien · última vez {ago}',
+  },
 
   'colors.title': 'Colores de subrayado',
   'colors.description':

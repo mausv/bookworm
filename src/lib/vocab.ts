@@ -1,8 +1,8 @@
-import { and, asc, eq, inArray, isNull, ne, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, ne, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/db'
 import { book, chapter, highlight, vocabEntry } from '@/db/schema'
 import { normalizeText, vocabTerm } from '@/importers/text'
-import type { VocabStatus } from '@/shared/types'
+import type { VocabSort, VocabStatus } from '@/shared/types'
 import { ownedVocabIds } from './access'
 import { page, type PageInput } from './page'
 
@@ -54,6 +54,35 @@ export interface VocabFilter extends PageInput {
   missingDefinition?: boolean
   missingTranslation?: boolean
   missingSynonyms?: boolean
+  studied?: boolean
+  revise?: boolean
+  sort?: VocabSort
+}
+
+const REVISE_AFTER_MS = 14 * 24 * 60 * 60 * 1000
+
+const reviews = sql<number>`(select count(*) from quiz_attempt qa where qa.vocab_id = ${vocabEntry.id})`
+const reviewsRight = sql<number>`(
+  select count(*) from quiz_attempt qa where qa.vocab_id = ${vocabEntry.id} and qa.correct = 1
+)`
+const lastReviewed = sql<number | null>`(
+  select max(qa.created_at) from quiz_attempt qa where qa.vocab_id = ${vocabEntry.id}
+)`
+
+function recentResult(offset: number) {
+  return sql`(
+    select qa.correct from quiz_attempt qa where qa.vocab_id = ${vocabEntry.id}
+    order by qa.created_at desc, qa.rowid desc limit 1 offset ${offset}
+  )`
+}
+
+// A miss in either of the last two reviews, or a word still being learned that hasn't been
+// reviewed for two weeks.
+function needsRevision(now: number) {
+  return sql`(
+    ${recentResult(0)} = 0 or ${recentResult(1)} = 0
+    or (${vocabEntry.status} = 'learning' and ${lastReviewed} < ${now - REVISE_AFTER_MS})
+  )`
 }
 
 const firstOccurrence = sql`(
@@ -73,6 +102,9 @@ export const vocabColumns = {
   definitionBy: vocabEntry.definitionBy,
   translation: vocabEntry.translation,
   translationBy: vocabEntry.translationBy,
+  reviews,
+  reviewsRight,
+  lastReviewed,
   synonyms: vocabEntry.synonyms,
   antonyms: vocabEntry.antonyms,
   occurrences: sql<number>`(
@@ -106,6 +138,8 @@ export function vocabConditions(userId: string, filter: VocabFilter) {
     conditions.push(sql`(${vocabEntry.translation} is null or ${vocabEntry.translation} = '')`)
   }
   if (filter.missingSynonyms) conditions.push(isNull(vocabEntry.synonyms))
+  if (filter.studied) conditions.push(sql`${reviews} > 0`)
+  if (filter.revise) conditions.push(needsRevision(Date.now()))
   return and(...conditions)
 }
 
@@ -118,17 +152,25 @@ export function selectVocab() {
     .leftJoin(chapter, eq(chapter.id, highlight.chapterId))
 }
 
+function vocabOrder(sort: VocabSort = 'reading') {
+  const byTerm = asc(vocabEntry.term)
+  if (sort === 'revise') return [sql`${reviewsRight} * 1.0 / ${reviews}`, asc(lastReviewed), byTerm]
+  if (sort === 'most') return [desc(reviews), byTerm]
+  if (sort === 'recent') return [desc(lastReviewed), byTerm]
+  return [
+    asc(book.title),
+    sql`${chapter.position} is null`,
+    asc(chapter.position),
+    asc(highlight.locStart),
+    byTerm,
+  ]
+}
+
 export function listVocab(userId: string, filter: VocabFilter = {}) {
   return page(filter, (limit, offset) =>
     selectVocab()
       .where(vocabConditions(userId, filter))
-      .orderBy(
-        asc(book.title),
-        sql`${chapter.position} is null`,
-        asc(chapter.position),
-        asc(highlight.locStart),
-        asc(vocabEntry.term)
-      )
+      .orderBy(...vocabOrder(filter.sort))
       .limit(limit)
       .offset(offset)
       .all()

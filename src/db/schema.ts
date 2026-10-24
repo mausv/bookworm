@@ -12,6 +12,7 @@ import {
   DEFINITION_SOURCES,
   HIGHLIGHT_TYPES,
   LORE_KINDS,
+  REVIEW_MODES,
   SOURCES,
   TRANSLATION_SOURCES,
   VOCAB_STATUSES,
@@ -458,7 +459,7 @@ export const quizAttempt = sqliteTable(
     vocabId: text('vocab_id')
       .notNull()
       .references(() => vocabEntry.id, { onDelete: 'cascade' }),
-    mode: text('mode', { enum: ['choice', 'typed'] }).notNull(),
+    mode: text('mode', { enum: REVIEW_MODES }).notNull(),
     correct: integer('correct', { mode: 'boolean' }).notNull(),
     createdAt: createdAt(),
   },

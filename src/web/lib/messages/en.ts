@@ -235,6 +235,7 @@ export const en = {
   'review.cards': 'Flashcards',
   'review.quiz': 'Quiz',
   'review.match': 'Match',
+  'review.history': 'History',
   'review.mode': 'Mode',
   'review.allChapters': 'All chapters',
 
@@ -297,6 +298,36 @@ export const en = {
   'match.emptyTranslations': 'No translated words here yet.',
   'match.emptyTranslationsBody':
     'Add translations in the book’s Vocab tab, or ask Claude to fill them in through the Bookworm connector.',
+
+  'history.reviews': 'Reviews',
+  'history.accuracy': 'Right',
+  'history.words': 'Words studied',
+  'history.streak': 'Streak',
+  'history.days': { one: '1 day', other: '{count} days' },
+  'history.lastDays': {
+    one: '1 review in the last 30 days',
+    other: '{count} reviews in the last 30 days',
+  },
+  'history.today': 'Today',
+  'history.wordsTitle': 'Words',
+  'history.sortBy': 'Sort words',
+  'history.revise': 'To revise',
+  'history.most': 'Most studied',
+  'history.recent': 'Recent',
+  'history.practiceQuiz': 'Practice in a quiz',
+  'history.practiceCards': 'Practice with flashcards',
+  'history.nothingToRevise': 'Nothing to revise right now. Nice.',
+  'history.wordStats': { one: 'Once · {percent}% right', other: '{count}× · {percent}% right' },
+  'history.more': 'Show more',
+  'history.emptyTitle': 'No reviews yet.',
+  'history.emptyBody':
+    'Flashcards, quizzes and the match game all count. Your history shows up here.',
+  'history.reviseOnly': 'Only words to revise',
+  'history.clearRevise': 'Show all words',
+  'vocab.studied': {
+    one: 'Studied once · {percent}% right · {ago}',
+    other: 'Studied {count}× · {percent}% right · last {ago}',
+  },
 
   'colors.title': 'Highlight colors',
   'colors.description': 'Which type each highlight color becomes. Changes apply to future imports.',

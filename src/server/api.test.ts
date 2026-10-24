@@ -181,6 +181,24 @@ describe('quiz and exports', () => {
     expect((await (await call('/api/quiz/match?pair=translation')).json()).pairs).toEqual([])
   })
 
+  it('records reviews and reports history and words to revise', async () => {
+    const { items } = await (await call('/api/vocab?limit=2')).json()
+    const res = await json('POST', '/api/reviews', {
+      reviews: [
+        { vocabId: items[0].id, mode: 'card', correct: false },
+        { vocabId: items[1].id, mode: 'match', correct: true },
+      ],
+    })
+    expect(await res.json()).toEqual({ recorded: 2 })
+    expect((await json('POST', '/api/reviews', { reviews: [] })).status).toBe(400)
+    const history = await (await call('/api/history?tz=300')).json()
+    expect(history).toMatchObject({ reviews: expect.any(Number), streak: 1 })
+    expect(history.days.at(-1).day).toBe(history.today)
+    const revise = await (await call('/api/vocab?studied=true&revise=true&sort=revise')).json()
+    expect(revise.items.map((v: { id: string }) => v.id)).toContain(items[0].id)
+    expect(revise.items[0]).toMatchObject({ reviews: expect.any(Number) })
+  })
+
   it('downloads Markdown, TSV and JSON exports', async () => {
     const { books } = await (await call('/api/books')).json()
     const md = await call(`/api/export/books/${books[0].id}/markdown`)

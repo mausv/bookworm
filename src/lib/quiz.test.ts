@@ -4,7 +4,8 @@ import { setupTestDb } from '@/test/db'
 
 const { db, schema, insertBook, insertHighlight, insertUser } = await setupTestDb()
 const userId = insertUser().id
-const { answerQuiz, buildMatch, buildQuiz, editDistance, normalizeAnswer } = await import('./quiz')
+const { answerQuiz, buildMatch, buildQuiz, editDistance, maskTerm, normalizeAnswer } =
+  await import('./quiz')
 const { ensureVocab, setVocabStatus, updateVocab } = await import('./vocab')
 const { getHighlight } = await import('./highlights')
 
@@ -46,6 +47,29 @@ describe('normalizeAnswer and editDistance', () => {
     expect(editDistance('ruddy', 'ruddy')).toBe(0)
     expect(editDistance('rudy', 'ruddy')).toBe(1)
     expect(editDistance('', 'abc')).toBe(3)
+  })
+})
+
+describe('maskTerm', () => {
+  it('blanks the word and its inflections', () => {
+    expect(maskTerm("An untidy pile; 'a heap of' / 'heaps of' = a lot of.", 'heap')).toBe(
+      "An untidy pile; 'a ____ of' / '____ of' = a lot of."
+    )
+    expect(maskTerm('He sauntered off, still Sauntering.', 'sauntering')).toBe(
+      'He ____ off, still ____.'
+    )
+    expect(maskTerm('An awesome view filled her with awe.', 'awe')).toBe(
+      'An ____ view filled her with ____.'
+    )
+  })
+
+  it('blanks the long words of a phrase but keeps short ones', () => {
+    expect(
+      maskTerm(
+        "'Make use of the opportunity' = take advantage of the chance.",
+        'Make use of the opportunity to have a bath yourself'
+      )
+    ).toBe("'____ use of the ____' = take advantage of the chance.")
   })
 })
 

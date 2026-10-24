@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Check } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { api } from '@/web/lib/api'
 import { type MessageKey, useT } from '@/web/lib/i18n'
@@ -102,6 +103,7 @@ function MatchRound({
   const [matched, setMatched] = useState<string[]>([])
   const [wrong, setWrong] = useState<{ term: string; answer: string }>()
   const [mistakes, setMistakes] = useState(0)
+  const [missed, setMissed] = useState<string[]>([])
   const [result, setResult] = useState<{ ms: number; best?: number }>()
 
   const deal = useQuery({
@@ -147,6 +149,7 @@ function MatchRound({
     setAnswer(undefined)
     if (nextTerm !== nextAnswer) {
       setMistakes((m) => m + 1)
+      setMissed((ids) => [...ids, nextTerm, nextAnswer])
       setWrong({ term: nextTerm, answer: nextAnswer })
       setTimeout(() => setWrong(undefined), 600)
       return
@@ -157,6 +160,14 @@ function MatchRound({
       const ms = elapsedSince(startedAt)
       const key = `bookworm.match.${pair}.${scope.bookId ?? 'all'}.${scope.chapterId ?? 'all'}`
       setResult({ ms, best: swapBest(key, ms) })
+      const reviews = terms.map((c) => ({
+        vocabId: c.vocabId,
+        mode: 'match',
+        correct: !missed.includes(c.vocabId),
+      }))
+      api('/reviews', { method: 'POST', json: { reviews } }).catch((error: Error) =>
+        toast.error(error.message)
+      )
     }
   }
 
