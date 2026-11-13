@@ -18,7 +18,7 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'sqlite', schema }),
   emailAndPassword: { enabled: true },
   session: {
-    expiresIn: 90 * 24 * 60 * 60,
+    expiresIn: 365 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
     cookieCache: { enabled: true, maxAge: 5 * 60 },
   },
