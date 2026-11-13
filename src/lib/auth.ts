@@ -17,7 +17,11 @@ export const mcpResource = `${issuer}/mcp`
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'sqlite', schema }),
   emailAndPassword: { enabled: true },
-  session: { cookieCache: { enabled: true, maxAge: 5 * 60 } },
+  session: {
+    expiresIn: 90 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
   advanced: { database: { generateId: 'uuid' } },
   databaseHooks: {
     user: { create: { after: async (created) => ensureInbox(created.email) } },
